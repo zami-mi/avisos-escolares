@@ -1,0 +1,966 @@
+/* Estilos generales del Panel de Avisos Escolares */
+:root {
+  --primary-school: #b81b14;
+  --primary-hover: #8b1817;
+  --bg-app: #f6f5f5;
+  --card-bg: #ffffff;
+  --text-main: #2d3748;
+  --text-muted: #718096;
+  --border-light: #e2e8f0;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.12);
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+/* Layout Principal del Dashboard */
+.dashboard-container {
+  min-height: 100vh;
+  background-color: var(--bg-app);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header / Barra de Navegación */
+.app-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--border-light);
+  padding: 14px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: var(--shadow-sm);
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-icon {
+  width: 40px;
+  height: 40px;
+  background-color: var(--primary-school);
+  color: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 20px;
+}
+
+.brand-titles h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #1a202c;
+  font-weight: 700;
+  text-align: left;
+}
+
+.brand-titles span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: block;
+  text-align: left;
+}
+
+.header-user-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.user-profile-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #f7fafc;
+  padding: 6px 14px;
+  border-radius: 30px;
+  border: 1px solid var(--border-light);
+}
+
+.user-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-school), #e53e3e);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.user-info {
+  text-align: left;
+  line-height: 1.2;
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #2d3748;
+}
+
+.btn-logout {
+  background-color: transparent;
+  color: #e53e3e;
+  border: 1px solid #fed7d7;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-logout:hover {
+  background-color: #e53e3e;
+  border-color: #e53e3e;
+  color: #ffffff;
+}
+
+/* Barra rápida de cambio de rol para testing */
+.role-quick-nav {
+  background: #2d3748;
+  color: #edf2f7;
+  padding: 8px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+}
+
+.role-quick-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #edf2f7;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.role-quick-btn:hover,
+.role-quick-btn.active {
+  background: var(--primary-school);
+  border-color: var(--primary-school);
+  color: #ffffff;
+}
+
+/* Badges de Roles */
+.role-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.role-badge.alumno {
+  background-color: #ebf8ff;
+  color: #2b6cb0;
+  border: 1px solid #bee3f8;
+}
+
+.role-badge.profesor {
+  background-color: #faf5ff;
+  color: #6b46c1;
+  border: 1px solid #e9d8fd;
+}
+
+.role-badge.preceptor {
+  background-color: #fffaf0;
+  color: #c05621;
+  border: 1px solid #feebc8;
+}
+
+.role-badge.regente {
+  background-color: #f0fff4;
+  color: #276749;
+  border: 1px solid #c6f6d5;
+}
+
+.role-badge.secretaria {
+  background-color: #fff5f5;
+  color: #9b2c2c;
+  border: 1px solid #fed7d7;
+}
+
+/* Contenido Principal de las Páginas */
+.dashboard-content {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+  flex: 1;
+}
+
+/* Banner de Bienvenida y Resumen */
+.welcome-hero {
+  background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+  color: white;
+  padding: 28px 32px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  box-shadow: var(--shadow-md);
+}
+
+.hero-text h1 {
+  margin: 0 0 6px 0;
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-align: left;
+}
+
+.hero-text p {
+  margin: 0;
+  color: #cbd5e0;
+  font-size: 0.95rem;
+  text-align: left;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-primary-action {
+  background-color: var(--primary-school);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 10px rgba(184, 27, 20, 0.3);
+}
+
+.btn-primary-action:hover {
+  background-color: var(--primary-hover);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* Tarjetas de Estadísticas / Resumen */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--card-bg);
+  padding: 18px 22px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+}
+
+.stat-card .stat-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.stat-card .stat-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #1a202c;
+  margin-top: 4px;
+}
+
+/* Filtros y Búsqueda */
+.filters-bar {
+  background: var(--card-bg);
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.search-wrapper {
+  flex: 1;
+  min-width: 250px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  outline: none;
+  background-color: #fcfcfc;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  border-color: var(--primary-school);
+  background-color: white;
+}
+
+.category-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip-btn {
+  background: #f1f5f9;
+  border: 1px solid var(--border-light);
+  color: var(--text-muted);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.chip-btn:hover {
+  background: #e2e8f0;
+  color: var(--text-main);
+}
+
+.chip-btn.active {
+  background: var(--primary-school);
+  color: white;
+  border-color: var(--primary-school);
+}
+
+/* Grid de Avisos Escolares */
+.notices-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+}
+
+/* Tarjeta individual de Aviso */
+.notice-card {
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+.notice-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.notice-card.prioridad-alta {
+  border-left: 5px solid #e53e3e;
+}
+
+.notice-card.prioridad-media {
+  border-left: 5px solid #dd6b20;
+}
+
+.notice-card.prioridad-normal {
+  border-left: 5px solid #3182ce;
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+/* Badge URGENTE — estilo visualmente destacado para avisos de prioridad alta */
+.notice-urgent-badge {
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background-color: #c53030;
+  color: #ffffff;
+  letter-spacing: 0.8px;
+  border: 1px solid #9b2c2c;
+  box-shadow: 0 2px 4px rgba(197, 48, 48, 0.25);
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.notice-category-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background-color: #edf2f7;
+  color: #4a5568;
+}
+
+.notice-category-badge.cat-ausencias-y-horarios {
+  background-color: #feebc8;
+  color: #7b341e;
+  border: 1px solid #fbd38d;
+}
+
+.notice-category-badge.cat-infraestructura-y-servicios {
+  background-color: #fed7d7;
+  color: #9b2c2c;
+  border: 1px solid #feb2b2;
+}
+
+.notice-category-badge.cat-calendario-escolar {
+  background-color: #e9d8fd;
+  color: #553c9e;
+  border: 1px solid #d6bcfa;
+}
+
+.notice-category-badge.cat-reuniones-y-eventos {
+  background-color: #c6f6d5;
+  color: #22543d;
+  border: 1px solid #9ae6b4;
+}
+
+.notice-category-badge.cat-comunidad-y-cooperadora {
+  background-color: #bee3f8;
+  color: #2b6cb0;
+  border: 1px solid #90cdf4;
+}
+
+/* Compatibilidad retroactiva con nombres antiguos */
+.notice-category-badge.urgente {
+  background-color: #fed7d7;
+  color: #9b2c2c;
+}
+
+.notice-category-badge.académico {
+  background-color: #e9d8fd;
+  color: #553c9e;
+}
+
+.notice-category-badge.institucional {
+  background-color: #feebc8;
+  color: #9c4221;
+}
+
+.notice-category-badge.administrativo {
+  background-color: #e2e8f0;
+  color: #2d3748;
+}
+
+.notice-date {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.notice-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0 0 10px 0;
+  line-height: 1.35;
+}
+
+.notice-preview {
+  font-size: 0.88rem;
+  color: #4a5568;
+  line-height: 1.5;
+  margin: 0 0 18px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-footer {
+  border-top: 1px solid #edf2f7;
+  padding-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.author-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.author-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.author-target {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.btn-read-more {
+  background: transparent;
+  color: var(--primary-school);
+  border: 1px solid var(--primary-school);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-read-more:hover {
+  background: var(--primary-school);
+  color: #ffffff;
+}
+
+.btn-delete-notice {
+  background: #fff5f5;
+  color: #e53e3e;
+  border: 1px solid #fed7d7;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-delete-notice:hover {
+  background: #e53e3e;
+  color: #ffffff;
+  border-color: #e53e3e;
+}
+
+/* Botón para alternar leído / no leído */
+.btn-toggle-read {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-toggle-read.unread {
+  background: #fff5f5;
+  color: #b81b14;
+  border: 1px solid #feb2b2;
+}
+
+.btn-toggle-read.unread:hover {
+  background: #b81b14;
+  color: #ffffff;
+  border-color: #8b1817;
+}
+
+.btn-toggle-read.read {
+  background: #edf2f7;
+  color: #4a5568;
+  border: 1px solid #cbd5e0;
+}
+
+.btn-toggle-read.read:hover {
+  background: #4a5568;
+  color: #ffffff;
+  border-color: #2d3748;
+}
+
+/* Modales */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+  backdrop-filter: blur(3px);
+}
+
+.modal-content {
+  background: white;
+  border-radius: var(--radius-lg);
+  max-width: 580px;
+  width: 100%;
+  padding: 30px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  text-align: left;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.35rem;
+  color: #1a202c;
+  line-height: 1.3;
+}
+
+.btn-close-modal {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0 6px;
+  line-height: 1;
+}
+
+.btn-close-modal:hover {
+  color: #1a202c;
+}
+
+.modal-body {
+  margin-top: 14px;
+}
+
+.modal-full-text {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #2d3748;
+  white-space: pre-line;
+  margin-bottom: 20px;
+}
+
+.modal-meta-box {
+  background-color: #f7fafc;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 20px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.modal-meta-box p {
+  margin: 4px 0;
+}
+
+.modal-meta-box strong {
+  color: #2d3748;
+}
+
+/* Estilos de Formulario en Modal */
+.form-row-2col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.form-group {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 6px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: none;
+}
+
+.form-group select {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.selected-info-box {
+  background-color: #f7fafc;
+  padding: 12px 14px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 0.88rem;
+  color: #4a5568;
+  border: 1px solid #e2e8f0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--primary-school);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btn-secondary {
+  background-color: #edf2f7;
+  color: #4a5568;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: #cbd5e0;
+  color: #1a202c;
+}
+
+/* Quick test badges en Login */
+.quick-login-section {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #edf2f7;
+}
+
+.quick-login-section p {
+  font-size: 0.8rem;
+  color: #718096;
+  margin-bottom: 12px;
+}
+
+.quick-login-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.btn-quick-role {
+  background-color: #f7fafc;
+  border: 1px solid #e2e8f0;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  color: #4a5568;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-quick-role:hover {
+  background-color: #2d3748;
+  border-color: #2d3748;
+  color: #ffffff;
+}
+
+/* Estado Vacío */
+.empty-state {
+  background: white;
+  padding: 48px 24px;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-light);
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.empty-state h3 {
+  margin: 0 0 8px 0;
+  color: #4a5568;
+}
+
+/* Pestañas para roles docentes / administrativos */
+.tabs-nav {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid var(--border-light);
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tab-btn:hover {
+  color: #8b1817;
+  background-color: #f1f5f9;
+  border-radius: 6px 6px 0 0;
+}
+
+.tab-btn.active {
+  color: var(--primary-school);
+  border-bottom-color: var(--primary-school);
+}
+
+.tab-btn.active:hover {
+  color: #8b1817;
+  background-color: rgba(184, 27, 20, 0.06);
+}
+
+/* Botones con colores específicos y estados hover */
+.btn-mark-all-read {
+  background-color: #2b6cb0;
+  color: #ffffff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.btn-mark-all-read:hover {
+  background-color: #2a4365;
+  color: #ffffff;
+}
+
+.btn-pending-absences-action {
+  background-color: #c05621;
+  color: #ffffff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-pending-absences-action:hover {
+  background-color: #9c4221;
+  color: #ffffff;
+}
+
+.btn-confirm-absence {
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background-color: #276749;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.btn-confirm-absence:hover {
+  background-color: #1c4532;
+  color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .header-user-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .welcome-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .hero-actions {
+    width: 100%;
+  }
+  .btn-primary-action {
+    width: 100%;
+    justify-content: center;
+  }
+}
