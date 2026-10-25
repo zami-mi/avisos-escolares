@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import AbsenceTable from "../components/absences/AbsenceTable";
 import NoticeCard from "../components/notices/NoticeCard";
 import NoticeFilters from "../components/notices/NoticeFilters";
@@ -19,10 +19,8 @@ export default function PreceptorDashboard({
   const [selectedNotice, setSelectedNotice] = useState(null);
   const [isCreateNoticeOpen, setIsCreateNoticeOpen] = useState(false);
 
-  // Filtrar ausencias relevantes para las divisiones del preceptor
-  const myDivisions = currentUser?.divisiones && currentUser.divisiones.length > 0
-    ? currentUser.divisiones
-    : ["2° 2", "6° 1"];
+  // Divisiones reales asignadas al preceptor según la base de datos
+  const myDivisions = currentUser?.divisiones || [];
 
   const relevantAbsences = absences.filter(
     (a) => !a.curso || myDivisions.includes(a.curso)
@@ -34,7 +32,7 @@ export default function PreceptorDashboard({
   // Avisos de sus divisiones
   const divisionNotices = notices.filter((n) => {
     const target = n.destinatario || "";
-    const isMyDivision = myDivisions.some((div) => target.includes(div));
+    const isMyDivision = myDivisions.length > 0 && myDivisions.some((div) => target.includes(div));
     const isFromPreceptor = n.rolAutor === "preceptor" || (currentUser?.nombre && n.autor?.toLowerCase().includes(currentUser.nombre.toLowerCase()));
     return isMyDivision || isFromPreceptor || target === "Todos";
   });
@@ -52,7 +50,7 @@ export default function PreceptorDashboard({
     <div className="dashboard-content">
       <div className="welcome-hero">
         <div className="hero-text">
-          <h1>Panel de Preceptoría - {currentUser?.nombre}</h1>
+          <h1>Panel de preceptoría - {currentUser?.nombre}</h1>
           <p>
             Turno: <strong>{currentUser?.turno}</strong> • Divisiones a cargo:{" "}
             <strong>{myDivisions.join(", ")}</strong>
@@ -88,23 +86,20 @@ export default function PreceptorDashboard({
               <strong style={{ color: "#c05621" }}>
                 Tenés {pendingAbsences.length} formulario(s) de ausencia docente pendiente(s) de confirmación.
               </strong>
-              <div style={{ fontSize: "0.82rem", color: "#7b341e" }}>
-                Al confirmar una ausencia, los alumnos del curso recibirán la notificación automática en su panel.
-              </div>
             </div>
           </div>
           <button
             className="btn-pending-absences-action"
             onClick={() => setActiveTab("ausencias")}
           >
-            Ver Ausencias Pendientes <i className="fa-solid fa-arrow-right" style={{ fontSize: "0.75rem" }}></i>
+            Ver ausencias <i className="fa-solid fa-arrow-right" style={{ fontSize: "0.75rem" }}></i>
           </button>
         </div>
       )}
 
       <div className="stats-row">
         <div className="stat-card">
-          <div className="stat-label">Ausencias Pendientes</div>
+          <div className="stat-label">Ausencias pendientes</div>
           <div
             className="stat-value"
             style={{ color: pendingAbsences.length > 0 ? "#e53e3e" : "#22543d" }}
@@ -113,7 +108,7 @@ export default function PreceptorDashboard({
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-label">Ausencias Confirmadas</div>
+          <div className="stat-label">Ausencias confirmadas</div>
           <div className="stat-value" style={{ color: "#22543d" }}>
             {confirmedAbsences.length}
           </div>
@@ -125,13 +120,13 @@ export default function PreceptorDashboard({
           className={`tab-btn ${activeTab === "ausencias" ? "active" : ""}`}
           onClick={() => setActiveTab("ausencias")}
         >
-          <i className="fa-regular fa-file-lines"></i>Ausencia Docente ({relevantAbsences.length})
+          <i className="fa-regular fa-file-lines"></i>Ausencia docente ({relevantAbsences.length})
         </button>
         <button
           className={`tab-btn ${activeTab === "avisos" ? "active" : ""}`}
           onClick={() => setActiveTab("avisos")}
         >
-          <i className="fa-regular fa-bell"></i> Avisos de mis Cursos ({divisionNotices.length})
+          <i className="fa-regular fa-bell"></i> Avisos de mis cursos ({divisionNotices.length})
         </button>
       </div>
       {activeTab === "ausencias" ? (
@@ -146,7 +141,7 @@ export default function PreceptorDashboard({
             absences={relevantAbsences}
             canConfirm={true}
             onConfirmAbsence={onConfirmAbsence}
-            emptyMessage="No hay formularios de ausencia pendientes para tus divisiones."
+            emptyMessage="No hay ausencias pendientes para tus divisiones."
           />
         </div>
       ) : (

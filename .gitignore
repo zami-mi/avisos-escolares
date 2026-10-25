@@ -13,11 +13,9 @@ dist
 dist-ssr
 *.local
 
-# Variables de entorno — contienen contraseñas y datos sensibles
 .env
 backend/.env
 
-# Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -27,3 +25,7 @@ backend/.env
 *.njsproj
 *.sln
 *.sw?
+
+.env.*
+!.env.example
+!backend/.env.example

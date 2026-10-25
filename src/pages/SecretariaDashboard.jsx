@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import AbsenceTable from "../components/absences/AbsenceTable";
 import NoticeCard from "../components/notices/NoticeCard";
 import NoticeFilters from "../components/notices/NoticeFilters";
@@ -18,18 +18,6 @@ export default function SecretariaDashboard({
   const [filtroEstado, setFiltroEstado] = useState("todos");
   const [filtroDocente, setFiltroDocente] = useState("");
   const [filtroCurso, setFiltroCurso] = useState("");
-
-  // Resumen estadístico desde MySQL
-  const [resumen, setResumen] = useState(null);
-
-  // Cargar resumen al entrar a la pestaña de ausencias
-  useEffect(() => {
-    if (activeTab !== "registroAusencias") return;
-    fetch("http://localhost:3002/api/ausencias/resumen")
-      .then((r) => r.json())
-      .then((d) => { if (d && d.total !== undefined) setResumen(d); })
-      .catch(() => {});
-  }, [activeTab]);
 
   // Obtener lista de docentes únicos para el selector de filtro
   const docentesUnicos = [...new Map(
@@ -88,7 +76,6 @@ export default function SecretariaDashboard({
         </div>
       </div>
 
-      {/* Estadísticas desglosadas */}
       <div className="stats-row">
         <div className="stat-card">
           <div className="stat-label">Total ausencias</div>
@@ -118,7 +105,6 @@ export default function SecretariaDashboard({
         </div>
       </div>
 
-      {/* Alerta si hay ausencias pendientes */}
       {pendientesCount > 0 && (
         <div
           style={{
@@ -165,7 +151,6 @@ export default function SecretariaDashboard({
             </div>
           </div>
 
-          {/* Filtros de la tabla */}
           <div
             style={{
               display: "flex",
@@ -183,7 +168,6 @@ export default function SecretariaDashboard({
               <i className="fa-solid fa-filter" style={{ marginRight: "5px" }}></i>Filtrar por:
             </span>
 
-            {/* Filtro estado */}
             <select
               id="filtro-estado"
               value={filtroEstado}
@@ -256,12 +240,11 @@ export default function SecretariaDashboard({
           />
         </div>
       ) : (
-        /* Pestaña: Todos los avisos — solo lectura para Secretaría */
         <div>
           <div style={{ marginBottom: "14px" }}>
-            <h3 style={{ margin: 0, color: "#2d3748" }}>Registro institucional de avisos</h3>
+            <h3 style={{ margin: 0, color: "#2d3748" }}>Registro escolar de avisos</h3>
             <p style={{ margin: "4px 0 0 0", fontSize: "0.85rem", color: "#718096" }}>
-              Todos los comunicados publicados en el sistema.
+              Todos los comunicados publicados.
             </p>
           </div>
 

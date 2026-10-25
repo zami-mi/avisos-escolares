@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import { useState } from "react";
 import NoticeCard from "../components/notices/NoticeCard";
 import NoticeFilters from "../components/notices/NoticeFilters";
 import NoticeDetailModal from "../components/common/NoticeDetailModal";
@@ -70,7 +69,7 @@ export default function AlumnoDashboard({
               className="btn-mark-all-read"
               onClick={onMarkAllRead}
             >
-              <i className="fa-solid fa-check"></i> Marcar todas como leídas ({unreadCount})
+              <i className="fa-solid fa-check"></i> Marcar como leídas ({unreadCount})
             </button>
           </div>
         )}
@@ -78,7 +77,7 @@ export default function AlumnoDashboard({
 
       <div className="stats-row">
         <div className="stat-card">
-          <div className="stat-label">Avisos de mi Curso</div>
+          <div className="stat-label">Avisos de mi curso</div>
           <div className="stat-value">{myCourseNotices.length}</div>
         </div>
         <div className="stat-card">
@@ -99,7 +98,7 @@ export default function AlumnoDashboard({
           className={`tab-btn ${viewFilter === "todos" ? "active" : ""}`}
           onClick={() => setViewFilter("todos")}
         >
-          <i className="fa-solid fa-list"></i> Todos los Avisos ({myCourseNotices.length})
+          <i className="fa-solid fa-list"></i> Todos los avisos ({myCourseNotices.length})
         </button>
         <button
           className={`tab-btn ${viewFilter === "noLeidas" ? "active" : ""}`}

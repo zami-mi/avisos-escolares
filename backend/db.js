@@ -53,8 +53,7 @@ function asegurarEstructuraTablas() {
 }
 
 function corregirAsignacionesHorarios() {
-    // Asegurar que Programación y Base de Datos (Computación) pertenezcan al docente de Computación (Carlos Martínez),
-    // y que Matemática e Inglés pertenezcan a María González según la asignación de cursos.
+    
     const updates = [
         "UPDATE horarios SET id_profesor = 2 WHERE id_horario = 1 AND id_profesor != 2",
         "UPDATE horarios SET id_profesor = 1 WHERE id_horario = 2 AND id_profesor != 1",

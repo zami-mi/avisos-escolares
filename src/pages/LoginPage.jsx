@@ -1,53 +1,43 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { authService } from "../services";
 
 export default function LoginPage({ onLoginSuccess }) {
   const [email, setEmail] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [mensaje, setMensaje] = useState("");
+  const [cargando, setCargando] = useState(false);
 
   async function iniciarSesion(event) {
     event.preventDefault();
-
     setMensaje("");
+    setCargando(true);
 
     try {
-      const respuesta = await fetch("http://localhost:3002/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: email.trim(),
-          contrasena: contrasena,
-        }),
-      });
+      const datos = await authService.login(email, contrasena);
 
-      const datos = await respuesta.json();
-
-      if (!respuesta.ok) {
-        setMensaje(datos.error || "Datos incorrectos");
-        return;
-      }
-
-      setMensaje("Bienvenido!");
-
+      setMensaje("¡Bienvenido!");
       setTimeout(() => {
         onLoginSuccess(datos.usuario);
       }, 300);
-
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
-      setMensaje("No se pudo conectar con el servidor");
+      if (error.isConnectionError) {
+        setMensaje("No se pudo conectar con el servidor. Verificá que el backend esté ejecutándose.");
+      } else {
+        setMensaje(error.message || "Email o contraseña incorrectos");
+      }
+    } finally {
+      setCargando(false);
     }
   }
 
   return (
     <div className="login-container">
       <div className="login-box">
-        <h1>Avisos Escolares</h1>
+        <h1>RED35</h1>
 
         <p className="subtitulo">
-          Iniciá sesión para continuar
+          Avisos escolares
         </p>
 
         <form onSubmit={iniciarSesion}>
@@ -56,9 +46,10 @@ export default function LoginPage({ onLoginSuccess }) {
           <input
             type="email"
             id="email"
-            placeholder="Ingresá tu email"
+            placeholder="Ingresá tu email institucional"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
+            disabled={cargando}
             required
           />
 
@@ -70,11 +61,12 @@ export default function LoginPage({ onLoginSuccess }) {
             placeholder="Ingresá tu contraseña"
             value={contrasena}
             onChange={(event) => setContrasena(event.target.value)}
+            disabled={cargando}
             required
           />
 
-          <button type="submit">
-            Ingresar
+          <button type="submit" disabled={cargando}>
+            {cargando ? "Iniciando sesión..." : "Ingresar"}
           </button>
         </form>
 
@@ -95,5 +87,3 @@ export default function LoginPage({ onLoginSuccess }) {
     </div>
   );
 }
-
-

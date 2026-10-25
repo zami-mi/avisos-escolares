@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import AbsenceTable from "../components/absences/AbsenceTable";
 import CreateAbsenceModal from "../components/absences/CreateAbsenceModal";
 import NoticeCard from "../components/notices/NoticeCard";
@@ -48,7 +48,7 @@ export default function ProfesorDashboard({
     <div className="dashboard-content">
       <div className="welcome-hero">
         <div className="hero-text">
-          <h1>Panel Docente - {currentUser?.nombre}</h1>
+          <h1>Panel <datalist></datalist>ocente - {currentUser?.nombre}</h1>
           <p>
             Materias: <strong>{currentUser?.materias?.join(", ")}</strong> &bull; Cursos asignados:{" "}
             <strong>{currentUser?.cursosAsignados?.join(", ")}</strong>
@@ -59,7 +59,7 @@ export default function ProfesorDashboard({
             className="btn-primary-action"
             onClick={() => setIsAbsenceModalOpen(true)}
           >
-            <i className="fa-solid fa-file-medical"></i> Informar Ausencia
+            <i className="fa-solid fa-file-medical"></i> Informar ausencia
           </button>
         </div>
       </div>
@@ -90,7 +90,7 @@ export default function ProfesorDashboard({
           className={`tab-btn ${activeTab === "circulares" ? "active" : ""}`}
           onClick={() => setActiveTab("circulares")}
         >
-          <i className="fa-regular fa-bell"></i> Avisos Escolares({institutionalNotices.length})
+          <i className="fa-regular fa-bell"></i> Avisos escolares({institutionalNotices.length})
         </button>
       </div>
 
@@ -103,7 +103,7 @@ export default function ProfesorDashboard({
               style={{ padding: "6px 14px", fontSize: "0.82rem" }}
               onClick={() => setIsAbsenceModalOpen(true)}
             >
-              <i className="fa-solid fa-plus"></i> Nueva Ausencia
+              <i className="fa-solid fa-plus"></i> Nueva ausencia
             </button>
           </div>
 

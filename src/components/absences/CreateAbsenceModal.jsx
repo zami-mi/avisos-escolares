@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { courseService } from "../../services";
 
 export default function CreateAbsenceModal({ isOpen, onClose, onSave, currentUser }) {
   const [horarios, setHorarios] = useState([]);
@@ -13,13 +14,10 @@ export default function CreateAbsenceModal({ isOpen, onClose, onSave, currentUse
 
     async function cargarHorarios() {
       try {
-        const resp = await fetch(`http://localhost:3002/api/profesor/${currentUser.id_usuario}/horarios`);
-        if (resp.ok) {
-          const data = await resp.json();
-          setHorarios(data);
-          if (data.length > 0) {
-            setSelectedHorarioId(data[0].id_horario);
-          }
+        const data = await courseService.getProfesorSchedules(currentUser.id_usuario);
+        setHorarios(data || []);
+        if (data && data.length > 0) {
+          setSelectedHorarioId(data[0].id_horario);
         }
       } catch (error) {
         console.error("Error al cargar horarios:", error);

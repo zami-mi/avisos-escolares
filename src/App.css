@@ -1,77 +1,150 @@
-* {
-  box-sizing: border-box;
-}
+/*
+ * App.css — Estilos de la pantalla de Login.
+ * Los estilos del dashboard y componentes internos están en src/styles/dashboard.css.
+ */
 
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background-color: #f6f5f5;
-}
-
+/* ----------------------------------------------------------
+   Pantalla de Inicio de Sesión
+   ---------------------------------------------------------- */
 .login-container {
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
+  background-color: #f6f5f5;
+  padding: 24px 16px;
 }
 
 .login-box {
-  width: 500px;
-  padding: 50px;
-  background-color: white;
+  width: 100%;
+  max-width: 440px;
+  padding: 44px 40px;
+  background-color: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
 }
 
 .login-box h1 {
-  margin-bottom: 20px;
+  font-family: 'Nunito', 'Inter', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #1a202c;
   text-align: center;
-  color: #333;
+  margin: 0 0 4px 0;
+}
+
+/* Franja de color institucional encima del título */
+.login-box h1::before {
+  content: '';
+  display: block;
+  width: 36px;
+  height: 4px;
+  background-color: #b81b14;
+  border-radius: 2px;
+  margin: 0 auto 16px;
 }
 
 .subtitulo {
-  margin-top:30px;
-  margin-bottom: 10px;
   text-align: center;
-  color: #666;
+  color: #718096;
+  font-size: 0.9rem;
+  margin: 0 0 28px 0;
 }
 
-form {
+/* Formulario de login */
+.login-box form {
   display: flex;
   flex-direction: column;
+  gap: 0;
 }
 
-label {
-  margin-bottom: 10px;
-  font-weight: bold;
-  color: #333;
+.login-box label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 6px;
+  margin-top: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
-input {
-  padding: 12px;
-  margin-bottom: 20px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 15px;
+.login-box label:first-of-type {
+  margin-top: 0;
 }
 
-button {
-  padding: 12px;
+.login-box input[type="email"],
+.login-box input[type="password"] {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #2d3748;
+  background-color: #fafafa;
+  outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s;
+  margin-bottom: 0;
+}
+
+.login-box input[type="email"]:focus,
+.login-box input[type="password"]:focus {
+  border-color: #b81b14;
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(184, 27, 20, 0.1);
+}
+
+.login-box input:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.login-box button[type="submit"] {
+  margin-top: 24px;
+  width: 100%;
+  padding: 11px 20px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   background-color: #b81b14;
   color: #ffffff;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  transition: background-color 0.18s, transform 0.15s;
 }
 
-button:hover {
+.login-box button[type="submit"]:hover:not(:disabled) {
   background-color: #8b1817;
-  color: #ffffff;
+  transform: translateY(-1px);
 }
-.mensaje{
-  margin-top: 20px;
+
+.login-box button[type="submit"]:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.mensaje {
+  margin-top: 18px;
   text-align: center;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background-color: #fff5f5;
+  border: 1px solid #fed7d7;
+}
+
+/* Mensaje de éxito */
+.mensaje.ok {
+  background-color: #f0fff4;
+  border-color: #c6f6d5;
+  color: #276749;
+}
+
+@media (max-width: 480px) {
+  .login-box {
+    padding: 32px 24px;
+  }
 }

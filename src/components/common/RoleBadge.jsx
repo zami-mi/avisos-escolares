@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function RoleBadge({ rol }) {
   const getLabel = (role) => {
     switch (role) {

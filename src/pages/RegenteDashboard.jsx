@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import AbsenceTable from "../components/absences/AbsenceTable";
 import NoticeCard from "../components/notices/NoticeCard";
 import NoticeFilters from "../components/notices/NoticeFilters";
 import NoticeDetailModal from "../components/common/NoticeDetailModal";
 import CreateNoticeModal from "../components/notices/CreateNoticeModal";
+import { noticeService } from "../services";
 
 export default function RegenteDashboard({
   currentUser,
@@ -18,43 +19,40 @@ export default function RegenteDashboard({
   const [selectedNotice, setSelectedNotice] = useState(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  // Avisos propios del regente cargados desde MySQL
+  // Avisos propios del regente cargados desde la base de datos
   const [myNotices, setMyNotices] = useState([]);
   const [loadingMyNotices, setLoadingMyNotices] = useState(false);
 
-  // Cargar los avisos propios del regente desde MySQL cuando se entra a la solapa
+  // Cargar avisos del regente al acceder a la solapa misAvisos
   useEffect(() => {
-    if (activeTab !== "misAvisos" || !currentUser?.id_usuario) return;
-
-    setLoadingMyNotices(true);
-    fetch(`http://localhost:3002/api/avisos/autor/${currentUser.id_usuario}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) setMyNotices(data);
-      })
-      .catch((err) => console.error("Error al cargar mis avisos:", err))
-      .finally(() => setLoadingMyNotices(false));
+    let activo = true;
+    if (activeTab === "misAvisos" && currentUser?.id_usuario) {
+      noticeService.getByAuthor(currentUser.id_usuario)
+        .then((data) => {
+          if (activo && Array.isArray(data)) setMyNotices(data);
+        })
+        .catch((err) => console.error("Error al cargar mis avisos:", err))
+        .finally(() => {
+          if (activo) setLoadingMyNotices(false);
+        });
+    }
+    return () => { activo = false; };
   }, [activeTab, currentUser?.id_usuario]);
 
-  // Sincronizar myNotices cuando se elimina un aviso desde onDeleteNotice
   const handleDeleteMyNotice = async (noticeId) => {
     await onDeleteNotice(noticeId);
     setMyNotices((prev) => prev.filter((n) => n.id !== noticeId));
   };
 
-  // También actualiza myNotices cuando se agrega un aviso nuevo
   const handleAddNoticeRegente = async (newNotice) => {
     await onAddNotice(newNotice);
-    // Recargar mis avisos desde MySQL para que se sincronice el nuevo aviso
     if (currentUser?.id_usuario) {
-      fetch(`http://localhost:3002/api/avisos/autor/${currentUser.id_usuario}`)
-        .then((res) => res.json())
+      noticeService.getByAuthor(currentUser.id_usuario)
         .then((data) => { if (Array.isArray(data)) setMyNotices(data); })
         .catch(() => { });
     }
   };
 
-  // Estadísticas
   const pendingAbsences = absences.filter((a) => a.estado === "pendiente");
 
   const filteredNotices = notices.filter((notice) => {
@@ -80,7 +78,7 @@ export default function RegenteDashboard({
       <div className="welcome-hero">
         <div className="hero-text">
           <h1>
-            <i className="fa-solid fa-building-columns" style={{ marginRight: "10px" }}></i>Panel de Regencia</h1>
+            <i className="fa-solid fa-building-columns" style={{ marginRight: "10px" }}></i>Panel de regencia</h1>
           <p>
             Regente: <strong>{currentUser?.nombre} {currentUser?.apellido}</strong>
           </p>
@@ -90,7 +88,7 @@ export default function RegenteDashboard({
             className="btn-primary-action"
             onClick={() => setIsCreateOpen(true)}
           >
-            <i className="fa-solid fa-bullhorn"></i> Crear Aviso
+            <i className="fa-solid fa-bullhorn"></i> Crear aviso
           </button>
         </div>
       </div>
@@ -131,7 +129,7 @@ export default function RegenteDashboard({
           className={`tab-btn ${activeTab === "misAvisos" ? "active" : ""}`}
           onClick={() => setActiveTab("misAvisos")}
         >
-          <i className="fa-solid fa-pen-to-square"></i> Mis Avisos
+          <i className="fa-solid fa-pen-to-square"></i> Mis avisos
         </button>
       </div>
 
@@ -149,7 +147,7 @@ export default function RegenteDashboard({
           <AbsenceTable
             absences={absences}
             canConfirm={false}
-            emptyMessage="No hay registros de ausencias docentes en el sistema."
+            emptyMessage="No hay registros de ausencias docentes."
           />
         </div>
       ) : activeTab === "avisos" ? (
@@ -193,7 +191,7 @@ export default function RegenteDashboard({
               style={{ padding: "6px 14px", fontSize: "0.82rem" }}
               onClick={() => setIsCreateOpen(true)}
             >
-              <i className="fa-solid fa-plus"></i> Nuevo Aviso
+              <i className="fa-solid fa-plus"></i> Nuevo aviso
             </button>
           </div>
 

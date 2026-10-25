@@ -1,4 +1,3 @@
-import React from "react";
 import RoleBadge from "./RoleBadge";
 import { getCategoryBadgeClass } from "../../data/mockData";
 
