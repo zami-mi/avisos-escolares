@@ -3,12 +3,14 @@ const mysql = require('mysql2');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
+
 const conexion = mysql.createConnection({
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'avisos_escolares',
     port: Number(process.env.DB_PORT) || 3306,
+    charset: 'UTF8MB4',
 
     ssl: {
         ca: fs.readFileSync(
@@ -18,6 +20,7 @@ const conexion = mysql.createConnection({
         rejectUnauthorized: true
     }
 });
+
 conexion.connect((error) => {
     if (error) {
         console.error('Error al conectar con MySQL:', error);
