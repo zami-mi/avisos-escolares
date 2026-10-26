@@ -117,7 +117,7 @@ const mysqlAdapter = {
   },
 
   async getCourses() {
-    return queryAsync('SELECT * FROM cursos ORDER BY año ASC, division ASC');
+    return queryAsync('SELECT * FROM cursos ORDER BY anio ASC, division ASC');
   },
 
   async getNotices() {
@@ -175,7 +175,7 @@ const mysqlAdapter = {
 
   async resolveCourses(destinatario) {
     if (!destinatario || destinatario === 'Todos' || destinatario === 'Toda la escuela') {
-      const all = await queryAsync('SELECT id_curso, CONCAT(año, "° ", division) AS curso_nombre FROM cursos ORDER BY año ASC, division ASC');
+      const all = await queryAsync('SELECT id_curso, CONCAT(anio, "° ", division) AS curso_nombre FROM cursos ORDER BY anio ASC, division ASC');
       return { esTodos: true, cursos: all };
     }
 
@@ -184,7 +184,7 @@ const mysqlAdapter = {
 
     for (const d of destinatariosList) {
       if (typeof d === 'number') {
-        const rows = await queryAsync('SELECT id_curso, CONCAT(año, "° ", division) AS curso_nombre FROM cursos WHERE id_curso = ?', [d]);
+        const rows = await queryAsync('SELECT id_curso, CONCAT(anio, "° ", division) AS curso_nombre FROM cursos WHERE id_curso = ?', [d]);
         if (rows.length > 0) cursosEncontrados.push(rows[0]);
         continue;
       }
@@ -195,14 +195,14 @@ const mysqlAdapter = {
         .trim();
 
       const searchSql = `
-        SELECT id_curso, CONCAT(año, '° ', division) AS curso_nombre 
+        SELECT id_curso, CONCAT(anio, '° ', division) AS curso_nombre 
         FROM cursos 
-        WHERE CONCAT(año, '° ', division) = ? 
-           OR CONCAT(año, 'to ', division) = ? 
-           OR CONCAT(año, 'ro ', division) = ? 
+        WHERE CONCAT(anio, '° ', division) = ? 
+           OR CONCAT(anio, 'to ', division) = ? 
+           OR CONCAT(anio, 'ro ', division) = ? 
            OR division = ?
-           OR ? LIKE CONCAT('%', año, '° ', division, '%')
-           OR ? LIKE CONCAT('%', año, '%', division, '%')
+           OR ? LIKE CONCAT('%', anio, '° ', division, '%')
+           OR ? LIKE CONCAT('%', anio, '%', division, '%')
         LIMIT 1
       `;
       const cRows = await queryAsync(searchSql, [clean, clean, clean, clean, clean, clean]);
