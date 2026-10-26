@@ -1,4 +1,4 @@
-import logo35 from "../images/logo35.png";
+import logo35 from "../../images/logo35.png";
 export default function Header({ onLogout }) {
   return (
     <header className="app-header">
