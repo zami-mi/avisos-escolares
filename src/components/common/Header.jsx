@@ -1,9 +1,10 @@
+import logo35 from "../images/logo35.png";
 export default function Header({ onLogout }) {
   return (
     <header className="app-header">
       <div className="header-brand">
         <div className="brand-icon">
-          <img src="/src/images/logo35.png" alt="Logo RED35" />
+         <img src={logo35} alt="Logo RED35" />
         </div>
         <div className="brand-titles">
           <h2>RED35</h2>
