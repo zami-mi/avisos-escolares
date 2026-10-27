@@ -1,6 +1,10 @@
 const conexion = require('../db');
 const emailService = require('../emailService');
 
+// Alias SQL para la columna `año` (con tilde) de la tabla cursos.
+// Se usa en todas las queries para evitar problemas de codificación en servidores remotos.
+const ANIO_COL = '`año`';
+
 function queryAsync(sql, params = []) {
   return new Promise((resolve, reject) => {
     conexion.query(sql, params, (err, results) => {
@@ -31,25 +35,24 @@ function withTransaction(callback) {
 
 const mysqlAdapter = {
   async authenticateUser(email, contrasena) {
-    const sql = `
-      SELECT 
-        u.id_usuario, 
-        u.id_usuario AS id,
-        u.nombre, 
-        u.apellido, 
-        u.email, 
-        u.rol,
-        al.id_curso,
-        CASE 
-          WHEN c.id_curso IS NOT NULL THEN CONCAT(c.anio, '\u00b0 ', c.division)
-          ELSE NULL 
-        END AS curso,
-        c.turno
-      FROM usuarios u
-      LEFT JOIN alumnos al ON u.id_usuario = al.id_usuario
-      LEFT JOIN cursos c ON al.id_curso = c.id_curso
-      WHERE u.email = ? AND u.contrasena = ?
-    `;
+    const sql =
+      'SELECT ' +
+      '  u.id_usuario, ' +
+      '  u.id_usuario AS id, ' +
+      '  u.nombre, ' +
+      '  u.apellido, ' +
+      '  u.email, ' +
+      '  u.rol, ' +
+      '  al.id_curso, ' +
+      '  CASE ' +
+      '    WHEN c.id_curso IS NOT NULL THEN CONCAT(c.`año`, \'° \', c.division) ' +
+      '    ELSE NULL ' +
+      '  END AS curso, ' +
+      '  c.turno ' +
+      'FROM usuarios u ' +
+      'LEFT JOIN alumnos al ON u.id_usuario = al.id_usuario ' +
+      'LEFT JOIN cursos c ON al.id_curso = c.id_curso ' +
+      'WHERE u.email = ? AND u.contrasena = ?';
 
     const rows = await queryAsync(sql, [email, contrasena]);
     if (rows.length === 0) return null;
@@ -62,21 +65,19 @@ const mysqlAdapter = {
         const profIds = profRows.map(r => r.id_profesor);
         usuario.id_profesor = profRows[0].id_profesor;
 
-        const horSql = `
-          SELECT DISTINCT m.nombre AS materia
-          FROM horarios h
-          JOIN materias m ON h.id_materia = m.id_materia
-          WHERE h.id_profesor IN (?)
-        `;
+        const horSql =
+          'SELECT DISTINCT m.nombre AS materia ' +
+          'FROM horarios h ' +
+          'JOIN materias m ON h.id_materia = m.id_materia ' +
+          'WHERE h.id_profesor IN (?)';
         const horRows = await queryAsync(horSql, [profIds]);
         usuario.materias = horRows.map(r => r.materia);
 
-        const curSql = `
-          SELECT DISTINCT CONCAT(c.anio, '\u00b0 ', c.division) AS curso
-          FROM horarios h
-          JOIN cursos c ON h.id_curso = c.id_curso
-          WHERE h.id_profesor IN (?)
-        `;
+        const curSql =
+          'SELECT DISTINCT CONCAT(c.`año`, \'° \', c.division) AS curso ' +
+          'FROM horarios h ' +
+          'JOIN cursos c ON h.id_curso = c.id_curso ' +
+          'WHERE h.id_profesor IN (?)';
         const curRows = await queryAsync(curSql, [profIds]);
         usuario.cursosAsignados = curRows.map(r => r.curso);
       } else {
@@ -84,16 +85,15 @@ const mysqlAdapter = {
         usuario.cursosAsignados = [];
       }
     } else if (usuario.rol === 'preceptor') {
-      const precSql = `
-        SELECT 
-          pc.id_curso,
-          CONCAT(c.anio, '\u00b0 ', c.division) AS curso,
-          c.turno
-        FROM preceptores p
-        JOIN preceptor_cursos pc ON p.id_preceptor = pc.id_preceptor
-        JOIN cursos c ON pc.id_curso = c.id_curso
-        WHERE p.id_usuario = ?
-      `;
+      const precSql =
+        'SELECT ' +
+        '  pc.id_curso, ' +
+        '  CONCAT(c.`año`, \'° \', c.division) AS curso, ' +
+        '  c.turno ' +
+        'FROM preceptores p ' +
+        'JOIN preceptor_cursos pc ON p.id_preceptor = pc.id_preceptor ' +
+        'JOIN cursos c ON pc.id_curso = c.id_curso ' +
+        'WHERE p.id_usuario = ?';
       const precRows = await queryAsync(precSql, [usuario.id_usuario]);
       if (precRows.length > 0) {
         usuario.divisiones = precRows.map(r => r.curso);
@@ -117,65 +117,69 @@ const mysqlAdapter = {
   },
 
   async getCourses() {
-    return queryAsync('SELECT * FROM cursos ORDER BY anio ASC, division ASC');
+    // La columna real en la BD se llama `año` (con tilde).
+    // Se devuelve con alias `anio` para que el frontend use siempre c.anio sin ambigüedad.
+    return queryAsync(
+      'SELECT id_curso, `año` AS anio, division, especialidad, turno FROM cursos ORDER BY `año` ASC, division ASC'
+    );
   },
 
   async getNotices() {
-    const sql = `
-      SELECT 
-        a.id_aviso AS id,
-        a.titulo,
-        a.contenido,
-        DATE_FORMAT(a.fecha_publicacion, '%Y-%m-%d') AS fecha,
-        a.tipo AS categoria,
-        a.prioridad,
-        a.notificar_familias,
-        ac.id_curso,
-        CASE 
-          WHEN ac.id_curso IS NULL THEN 'Todos'
-          ELSE CONCAT(c.anio, '\u00b0 ', c.division)
-        END AS destinatario,
-        CONCAT(u.nombre, ' ', u.apellido) AS autor,
-        u.rol AS rolAutor
-      FROM avisos a
-      LEFT JOIN avisos_cursos ac ON a.id_aviso = ac.id_aviso
-      LEFT JOIN cursos c ON ac.id_curso = c.id_curso
-      LEFT JOIN usuarios u ON a.id_usuario = u.id_usuario
-      ORDER BY a.fecha_publicacion DESC, a.id_aviso DESC
-    `;
+    const sql =
+      'SELECT ' +
+      '  a.id_aviso AS id, ' +
+      '  a.titulo, ' +
+      '  a.contenido, ' +
+      '  DATE_FORMAT(a.fecha_publicacion, \'%Y-%m-%d\') AS fecha, ' +
+      '  a.tipo AS categoria, ' +
+      '  a.prioridad, ' +
+      '  a.notificar_familias, ' +
+      '  ac.id_curso, ' +
+      '  CASE ' +
+      '    WHEN ac.id_curso IS NULL THEN \'Todos\' ' +
+      '    ELSE CONCAT(c.`año`, \'° \', c.division) ' +
+      '  END AS destinatario, ' +
+      '  CONCAT(u.nombre, \' \', u.apellido) AS autor, ' +
+      '  u.rol AS rolAutor ' +
+      'FROM avisos a ' +
+      'LEFT JOIN avisos_cursos ac ON a.id_aviso = ac.id_aviso ' +
+      'LEFT JOIN cursos c ON ac.id_curso = c.id_curso ' +
+      'LEFT JOIN usuarios u ON a.id_usuario = u.id_usuario ' +
+      'ORDER BY a.fecha_publicacion DESC, a.id_aviso DESC';
     return queryAsync(sql);
   },
 
   async getNoticesByAuthor(userId) {
-    const sql = `
-      SELECT 
-        a.id_aviso AS id,
-        a.titulo,
-        a.contenido,
-        DATE_FORMAT(a.fecha_publicacion, '%Y-%m-%d') AS fecha,
-        a.tipo AS categoria,
-        a.prioridad,
-        a.notificar_familias,
-        ac.id_curso,
-        CASE 
-          WHEN ac.id_curso IS NULL THEN 'Todos'
-          ELSE CONCAT(c.anio, '\u00b0 ', c.division)
-        END AS destinatario,
-        CONCAT(u.nombre, ' ', u.apellido) AS autor,
-        u.rol AS rolAutor
-      FROM avisos a
-      LEFT JOIN avisos_cursos ac ON a.id_aviso = ac.id_aviso
-      LEFT JOIN cursos c ON ac.id_curso = c.id_curso
-      LEFT JOIN usuarios u ON a.id_usuario = u.id_usuario
-      WHERE a.id_usuario = ?
-      ORDER BY a.fecha_publicacion DESC, a.id_aviso DESC
-    `;
+    const sql =
+      'SELECT ' +
+      '  a.id_aviso AS id, ' +
+      '  a.titulo, ' +
+      '  a.contenido, ' +
+      '  DATE_FORMAT(a.fecha_publicacion, \'%Y-%m-%d\') AS fecha, ' +
+      '  a.tipo AS categoria, ' +
+      '  a.prioridad, ' +
+      '  a.notificar_familias, ' +
+      '  ac.id_curso, ' +
+      '  CASE ' +
+      '    WHEN ac.id_curso IS NULL THEN \'Todos\' ' +
+      '    ELSE CONCAT(c.`año`, \'° \', c.division) ' +
+      '  END AS destinatario, ' +
+      '  CONCAT(u.nombre, \' \', u.apellido) AS autor, ' +
+      '  u.rol AS rolAutor ' +
+      'FROM avisos a ' +
+      'LEFT JOIN avisos_cursos ac ON a.id_aviso = ac.id_aviso ' +
+      'LEFT JOIN cursos c ON ac.id_curso = c.id_curso ' +
+      'LEFT JOIN usuarios u ON a.id_usuario = u.id_usuario ' +
+      'WHERE a.id_usuario = ? ' +
+      'ORDER BY a.fecha_publicacion DESC, a.id_aviso DESC';
     return queryAsync(sql, [userId]);
   },
 
   async resolveCourses(destinatario) {
     if (!destinatario || destinatario === 'Todos' || destinatario === 'Toda la escuela') {
-      const all = await queryAsync("SELECT id_curso, CONCAT(anio, '\u00b0 ', division) AS curso_nombre FROM cursos ORDER BY anio ASC, division ASC");
+      const all = await queryAsync(
+        'SELECT id_curso, CONCAT(`año`, \'° \', division) AS curso_nombre FROM cursos ORDER BY `año` ASC, division ASC'
+      );
       return { esTodos: true, cursos: all };
     }
 
@@ -184,7 +188,10 @@ const mysqlAdapter = {
 
     for (const d of destinatariosList) {
       if (typeof d === 'number') {
-        const rows = await queryAsync("SELECT id_curso, CONCAT(anio, '\u00b0 ', division) AS curso_nombre FROM cursos WHERE id_curso = ?", [d]);
+        const rows = await queryAsync(
+          'SELECT id_curso, CONCAT(`año`, \'° \', division) AS curso_nombre FROM cursos WHERE id_curso = ?',
+          [d]
+        );
         if (rows.length > 0) cursosEncontrados.push(rows[0]);
         continue;
       }
@@ -194,17 +201,16 @@ const mysqlAdapter = {
         .replace(/^alumnos\s+de\s+/i, '')
         .trim();
 
-      const searchSql = `
-        SELECT id_curso, CONCAT(anio, '\u00b0 ', division) AS curso_nombre 
-        FROM cursos 
-        WHERE CONCAT(anio, '\u00b0 ', division) = ? 
-           OR CONCAT(anio, 'to ', division) = ? 
-           OR CONCAT(anio, 'ro ', division) = ? 
-           OR division = ?
-           OR ? LIKE CONCAT('%', anio, '\u00b0 ', division, '%')
-           OR ? LIKE CONCAT('%', anio, '%', division, '%')
-        LIMIT 1
-      `;
+      const searchSql =
+        'SELECT id_curso, CONCAT(`año`, \'° \', division) AS curso_nombre ' +
+        'FROM cursos ' +
+        'WHERE CONCAT(`año`, \'° \', division) = ? ' +
+        '   OR CONCAT(`año`, \'to \', division) = ? ' +
+        '   OR CONCAT(`año`, \'ro \', division) = ? ' +
+        '   OR division = ? ' +
+        '   OR ? LIKE CONCAT(\'%\', `año`, \'° \', division, \'%\') ' +
+        '   OR ? LIKE CONCAT(\'%\', `año`, \'%\', division, \'%\') ' +
+        'LIMIT 1';
       const cRows = await queryAsync(searchSql, [clean, clean, clean, clean, clean, clean]);
       if (cRows.length > 0) {
         cursosEncontrados.push(cRows[0]);
@@ -222,10 +228,9 @@ const mysqlAdapter = {
       const prioridadAviso = prioridad || 'normal';
       const notificarFamiliasVal = notificar_familias ? 1 : 0;
 
-      const insertSql = `
-        INSERT INTO avisos (titulo, contenido, tipo, prioridad, id_usuario, notificar_familias)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `;
+      const insertSql =
+        'INSERT INTO avisos (titulo, contenido, tipo, prioridad, id_usuario, notificar_familias) ' +
+        'VALUES (?, ?, ?, ?, ?, ?)';
       const result = await queryAsync(insertSql, [titulo, contenido, tipoAviso, prioridadAviso, id_usuario, notificarFamiliasVal]);
       const id_aviso = result.insertId;
 
@@ -268,54 +273,45 @@ const mysqlAdapter = {
       let familiasParaEmail = [];
       if (notificarFamiliasVal === 1) {
         if (esTodos) {
-          const famSql = `
-            SELECT DISTINCT 
-              f.email,
-              f.nombre,
-              f.apellido
-            FROM familias f
-            JOIN familia_alumno fa ON f.id_familia = fa.id_familia
-            JOIN alumnos al ON fa.id_alumno = al.id_alumno
-          `;
+          const famSql =
+            'SELECT DISTINCT f.email, f.nombre, f.apellido ' +
+            'FROM familias f ' +
+            'JOIN familia_alumno fa ON f.id_familia = fa.id_familia ' +
+            'JOIN alumnos al ON fa.id_alumno = al.id_alumno';
           familiasParaEmail = await queryAsync(famSql);
         } else if (alumnosIdsAlumnos.length > 0) {
-          const famSql = `
-            SELECT DISTINCT 
-              f.email,
-              f.nombre,
-              f.apellido
-            FROM familias f
-            JOIN familia_alumno fa ON f.id_familia = fa.id_familia
-            WHERE fa.id_alumno IN (?)
-          `;
+          const famSql =
+            'SELECT DISTINCT f.email, f.nombre, f.apellido ' +
+            'FROM familias f ' +
+            'JOIN familia_alumno fa ON f.id_familia = fa.id_familia ' +
+            'WHERE fa.id_alumno IN (?)';
           familiasParaEmail = await queryAsync(famSql, [alumnosIdsAlumnos]);
         }
       }
 
       // 4. Recuperar el aviso recién insertado para la respuesta
-      const getAvisoSql = `
-        SELECT 
-          a.id_aviso AS id,
-          a.titulo,
-          a.contenido,
-          DATE_FORMAT(a.fecha_publicacion, '%Y-%m-%d') AS fecha,
-          a.tipo AS categoria,
-          a.prioridad,
-          a.notificar_familias,
-          ac.id_curso,
-          CASE 
-            WHEN ac.id_curso IS NULL THEN 'Todos'
-            ELSE CONCAT(c.anio, '\u00b0 ', c.division)
-          END AS destinatario,
-          CONCAT(u.nombre, ' ', u.apellido) AS autor,
-          u.rol AS rolAutor
-        FROM avisos a
-        LEFT JOIN avisos_cursos ac ON a.id_aviso = ac.id_aviso
-        LEFT JOIN cursos c ON ac.id_curso = c.id_curso
-        LEFT JOIN usuarios u ON a.id_usuario = u.id_usuario
-        WHERE a.id_aviso = ?
-        LIMIT 1
-      `;
+      const getAvisoSql =
+        'SELECT ' +
+        '  a.id_aviso AS id, ' +
+        '  a.titulo, ' +
+        '  a.contenido, ' +
+        '  DATE_FORMAT(a.fecha_publicacion, \'%Y-%m-%d\') AS fecha, ' +
+        '  a.tipo AS categoria, ' +
+        '  a.prioridad, ' +
+        '  a.notificar_familias, ' +
+        '  ac.id_curso, ' +
+        '  CASE ' +
+        '    WHEN ac.id_curso IS NULL THEN \'Todos\' ' +
+        '    ELSE CONCAT(c.`año`, \'° \', c.division) ' +
+        '  END AS destinatario, ' +
+        '  CONCAT(u.nombre, \' \', u.apellido) AS autor, ' +
+        '  u.rol AS rolAutor ' +
+        'FROM avisos a ' +
+        'LEFT JOIN avisos_cursos ac ON a.id_aviso = ac.id_aviso ' +
+        'LEFT JOIN cursos c ON ac.id_curso = c.id_curso ' +
+        'LEFT JOIN usuarios u ON a.id_usuario = u.id_usuario ' +
+        'WHERE a.id_aviso = ? ' +
+        'LIMIT 1';
       const noticeRows = await queryAsync(getAvisoSql, [id_aviso]);
       const avisoCreado = noticeRows[0] || {
         id: id_aviso,
@@ -370,102 +366,98 @@ const mysqlAdapter = {
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    const sql = `
-      SELECT 
-        aus.id_ausencia AS id,
-        CONCAT(u.nombre, ' ', u.apellido) AS profesorNombre,
-        u.id_usuario AS profesorId,
-        DATE_FORMAT(aus.fecha, '%Y-%m-%d') AS fecha,
-        CONCAT(TIME_FORMAT(h.hora_inicio, '%H:%i'), ' a ', TIME_FORMAT(h.hora_fin, '%H:%i'), ' hs') AS horario,
-        m.nombre AS materia,
-        CONCAT(c.anio, '\u00b0 ', c.division) AS curso,
-        c.id_curso,
-        aus.motivo,
-        COALESCE(aus.estado, 'pendiente') AS estado,
-        aus.confirmado_por AS confirmadoPor,
-        DATE_FORMAT(aus.fecha_confirmacion, '%Y-%m-%d') AS fechaConfirmacion,
-        aus.notificar_familias
-      FROM ausencias aus
-      JOIN horarios h ON aus.id_horario = h.id_horario
-      JOIN profesores p ON h.id_profesor = p.id_profesor
-      JOIN usuarios u ON p.id_usuario = u.id_usuario
-      JOIN materias m ON h.id_materia = m.id_materia
-      JOIN cursos c ON h.id_curso = c.id_curso
-      ${whereClause}
-      ORDER BY aus.fecha DESC, aus.id_ausencia DESC
-    `;
+    const sql =
+      'SELECT ' +
+      '  aus.id_ausencia AS id, ' +
+      '  CONCAT(u.nombre, \' \', u.apellido) AS profesorNombre, ' +
+      '  u.id_usuario AS profesorId, ' +
+      '  DATE_FORMAT(aus.fecha, \'%Y-%m-%d\') AS fecha, ' +
+      '  CONCAT(TIME_FORMAT(h.hora_inicio, \'%H:%i\'), \' a \', TIME_FORMAT(h.hora_fin, \'%H:%i\'), \' hs\') AS horario, ' +
+      '  m.nombre AS materia, ' +
+      '  CONCAT(c.`año`, \'° \', c.division) AS curso, ' +
+      '  c.id_curso, ' +
+      '  aus.motivo, ' +
+      '  COALESCE(aus.estado, \'pendiente\') AS estado, ' +
+      '  aus.confirmado_por AS confirmadoPor, ' +
+      '  DATE_FORMAT(aus.fecha_confirmacion, \'%Y-%m-%d\') AS fechaConfirmacion, ' +
+      '  aus.notificar_familias ' +
+      'FROM ausencias aus ' +
+      'JOIN horarios h ON aus.id_horario = h.id_horario ' +
+      'JOIN profesores p ON h.id_profesor = p.id_profesor ' +
+      'JOIN usuarios u ON p.id_usuario = u.id_usuario ' +
+      'JOIN materias m ON h.id_materia = m.id_materia ' +
+      'JOIN cursos c ON h.id_curso = c.id_curso ' +
+      whereClause + ' ' +
+      'ORDER BY aus.fecha DESC, aus.id_ausencia DESC';
     return queryAsync(sql, params);
   },
 
   async getAbsencesByProfesor(userId) {
-    const sql = `
-      SELECT 
-        aus.id_ausencia AS id,
-        CONCAT(u.nombre, ' ', u.apellido) AS profesorNombre,
-        u.id_usuario AS profesorId,
-        DATE_FORMAT(aus.fecha, '%Y-%m-%d') AS fecha,
-        CONCAT(TIME_FORMAT(h.hora_inicio, '%H:%i'), ' a ', TIME_FORMAT(h.hora_fin, '%H:%i'), ' hs') AS horario,
-        m.nombre AS materia,
-        CONCAT(c.anio, '\u00b0 ', c.division) AS curso,
-        c.id_curso,
-        aus.motivo,
-        COALESCE(aus.estado, 'pendiente') AS estado,
-        aus.confirmado_por AS confirmadoPor,
-        DATE_FORMAT(aus.fecha_confirmacion, '%Y-%m-%d') AS fechaConfirmacion,
-        aus.notificar_familias
-      FROM ausencias aus
-      JOIN horarios h ON aus.id_horario = h.id_horario
-      JOIN profesores p ON h.id_profesor = p.id_profesor
-      JOIN usuarios u ON p.id_usuario = u.id_usuario
-      JOIN materias m ON h.id_materia = m.id_materia
-      JOIN cursos c ON h.id_curso = c.id_curso
-      WHERE p.id_usuario = ?
-      ORDER BY aus.fecha DESC, aus.id_ausencia DESC
-    `;
+    const sql =
+      'SELECT ' +
+      '  aus.id_ausencia AS id, ' +
+      '  CONCAT(u.nombre, \' \', u.apellido) AS profesorNombre, ' +
+      '  u.id_usuario AS profesorId, ' +
+      '  DATE_FORMAT(aus.fecha, \'%Y-%m-%d\') AS fecha, ' +
+      '  CONCAT(TIME_FORMAT(h.hora_inicio, \'%H:%i\'), \' a \', TIME_FORMAT(h.hora_fin, \'%H:%i\'), \' hs\') AS horario, ' +
+      '  m.nombre AS materia, ' +
+      '  CONCAT(c.`año`, \'° \', c.division) AS curso, ' +
+      '  c.id_curso, ' +
+      '  aus.motivo, ' +
+      '  COALESCE(aus.estado, \'pendiente\') AS estado, ' +
+      '  aus.confirmado_por AS confirmadoPor, ' +
+      '  DATE_FORMAT(aus.fecha_confirmacion, \'%Y-%m-%d\') AS fechaConfirmacion, ' +
+      '  aus.notificar_familias ' +
+      'FROM ausencias aus ' +
+      'JOIN horarios h ON aus.id_horario = h.id_horario ' +
+      'JOIN profesores p ON h.id_profesor = p.id_profesor ' +
+      'JOIN usuarios u ON p.id_usuario = u.id_usuario ' +
+      'JOIN materias m ON h.id_materia = m.id_materia ' +
+      'JOIN cursos c ON h.id_curso = c.id_curso ' +
+      'WHERE p.id_usuario = ? ' +
+      'ORDER BY aus.fecha DESC, aus.id_ausencia DESC';
     return queryAsync(sql, [userId]);
   },
 
   async getAbsencesByPreceptor(userId) {
-    const sql = `
-      SELECT 
-        aus.id_ausencia AS id,
-        CONCAT(u.nombre, ' ', u.apellido) AS profesorNombre,
-        u.id_usuario AS profesorId,
-        DATE_FORMAT(aus.fecha, '%Y-%m-%d') AS fecha,
-        CONCAT(TIME_FORMAT(h.hora_inicio, '%H:%i'), ' a ', TIME_FORMAT(h.hora_fin, '%H:%i'), ' hs') AS horario,
-        m.nombre AS materia,
-        CONCAT(c.anio, '\u00b0 ', c.division) AS curso,
-        c.id_curso,
-        aus.motivo,
-        COALESCE(aus.estado, 'pendiente') AS estado,
-        aus.confirmado_por AS confirmadoPor,
-        DATE_FORMAT(aus.fecha_confirmacion, '%Y-%m-%d') AS fechaConfirmacion,
-        aus.notificar_familias
-      FROM ausencias aus
-      JOIN horarios h ON aus.id_horario = h.id_horario
-      JOIN profesores p ON h.id_profesor = p.id_profesor
-      JOIN usuarios u ON p.id_usuario = u.id_usuario
-      JOIN materias m ON h.id_materia = m.id_materia
-      JOIN cursos c ON h.id_curso = c.id_curso
-      JOIN preceptor_cursos pc ON c.id_curso = pc.id_curso
-      JOIN preceptores prec ON pc.id_preceptor = prec.id_preceptor
-      WHERE prec.id_usuario = ?
-      ORDER BY aus.fecha DESC, aus.id_ausencia DESC
-    `;
+    const sql =
+      'SELECT ' +
+      '  aus.id_ausencia AS id, ' +
+      '  CONCAT(u.nombre, \' \', u.apellido) AS profesorNombre, ' +
+      '  u.id_usuario AS profesorId, ' +
+      '  DATE_FORMAT(aus.fecha, \'%Y-%m-%d\') AS fecha, ' +
+      '  CONCAT(TIME_FORMAT(h.hora_inicio, \'%H:%i\'), \' a \', TIME_FORMAT(h.hora_fin, \'%H:%i\'), \' hs\') AS horario, ' +
+      '  m.nombre AS materia, ' +
+      '  CONCAT(c.`año`, \'° \', c.division) AS curso, ' +
+      '  c.id_curso, ' +
+      '  aus.motivo, ' +
+      '  COALESCE(aus.estado, \'pendiente\') AS estado, ' +
+      '  aus.confirmado_por AS confirmadoPor, ' +
+      '  DATE_FORMAT(aus.fecha_confirmacion, \'%Y-%m-%d\') AS fechaConfirmacion, ' +
+      '  aus.notificar_familias ' +
+      'FROM ausencias aus ' +
+      'JOIN horarios h ON aus.id_horario = h.id_horario ' +
+      'JOIN profesores p ON h.id_profesor = p.id_profesor ' +
+      'JOIN usuarios u ON p.id_usuario = u.id_usuario ' +
+      'JOIN materias m ON h.id_materia = m.id_materia ' +
+      'JOIN cursos c ON h.id_curso = c.id_curso ' +
+      'JOIN preceptor_cursos pc ON c.id_curso = pc.id_curso ' +
+      'JOIN preceptores prec ON pc.id_preceptor = prec.id_preceptor ' +
+      'WHERE prec.id_usuario = ? ' +
+      'ORDER BY aus.fecha DESC, aus.id_ausencia DESC';
     return queryAsync(sql, [userId]);
   },
 
   async getAbsencesSummary() {
-    const sql = `
-      SELECT
-        COUNT(*) AS total,
-        SUM(CASE WHEN aus.estado = 'pendiente' THEN 1 ELSE 0 END) AS pendientes,
-        SUM(CASE WHEN aus.estado = 'confirmada' THEN 1 ELSE 0 END) AS confirmadas,
-        COUNT(DISTINCT h.id_profesor) AS profesoresInvolucrados,
-        COUNT(DISTINCT h.id_curso) AS cursosAfectados
-      FROM ausencias aus
-      JOIN horarios h ON aus.id_horario = h.id_horario
-    `;
+    const sql =
+      'SELECT ' +
+      '  COUNT(*) AS total, ' +
+      '  SUM(CASE WHEN aus.estado = \'pendiente\' THEN 1 ELSE 0 END) AS pendientes, ' +
+      '  SUM(CASE WHEN aus.estado = \'confirmada\' THEN 1 ELSE 0 END) AS confirmadas, ' +
+      '  COUNT(DISTINCT h.id_profesor) AS profesoresInvolucrados, ' +
+      '  COUNT(DISTINCT h.id_curso) AS cursosAfectados ' +
+      'FROM ausencias aus ' +
+      'JOIN horarios h ON aus.id_horario = h.id_horario';
     const rows = await queryAsync(sql);
     return rows[0];
   },
@@ -475,65 +467,62 @@ const mysqlAdapter = {
     const insertSql = 'INSERT INTO ausencias (id_horario, fecha, motivo, notificar_familias) VALUES (?, ?, ?, ?)';
     const result = await queryAsync(insertSql, [id_horario, fecha, motivo || null, notificarFamiliasVal]);
 
-    const getSql = `
-      SELECT 
-        aus.id_ausencia AS id,
-        CONCAT(u.nombre, ' ', u.apellido) AS profesorNombre,
-        u.id_usuario AS profesorId,
-        DATE_FORMAT(aus.fecha, '%Y-%m-%d') AS fecha,
-        CONCAT(TIME_FORMAT(h.hora_inicio, '%H:%i'), ' a ', TIME_FORMAT(h.hora_fin, '%H:%i'), ' hs') AS horario,
-        m.nombre AS materia,
-        CONCAT(c.anio, '\u00b0 ', c.division) AS curso,
-        c.id_curso,
-        aus.motivo,
-        COALESCE(aus.estado, 'pendiente') AS estado,
-        aus.confirmado_por AS confirmadoPor,
-        DATE_FORMAT(aus.fecha_confirmacion, '%Y-%m-%d') AS fechaConfirmacion,
-        aus.notificar_familias
-      FROM ausencias aus
-      JOIN horarios h ON aus.id_horario = h.id_horario
-      JOIN profesores p ON h.id_profesor = p.id_profesor
-      JOIN usuarios u ON p.id_usuario = u.id_usuario
-      JOIN materias m ON h.id_materia = m.id_materia
-      JOIN cursos c ON h.id_curso = c.id_curso
-      WHERE aus.id_ausencia = ?
-    `;
+    const getSql =
+      'SELECT ' +
+      '  aus.id_ausencia AS id, ' +
+      '  CONCAT(u.nombre, \' \', u.apellido) AS profesorNombre, ' +
+      '  u.id_usuario AS profesorId, ' +
+      '  DATE_FORMAT(aus.fecha, \'%Y-%m-%d\') AS fecha, ' +
+      '  CONCAT(TIME_FORMAT(h.hora_inicio, \'%H:%i\'), \' a \', TIME_FORMAT(h.hora_fin, \'%H:%i\'), \' hs\') AS horario, ' +
+      '  m.nombre AS materia, ' +
+      '  CONCAT(c.`año`, \'° \', c.division) AS curso, ' +
+      '  c.id_curso, ' +
+      '  aus.motivo, ' +
+      '  COALESCE(aus.estado, \'pendiente\') AS estado, ' +
+      '  aus.confirmado_por AS confirmadoPor, ' +
+      '  DATE_FORMAT(aus.fecha_confirmacion, \'%Y-%m-%d\') AS fechaConfirmacion, ' +
+      '  aus.notificar_familias ' +
+      'FROM ausencias aus ' +
+      'JOIN horarios h ON aus.id_horario = h.id_horario ' +
+      'JOIN profesores p ON h.id_profesor = p.id_profesor ' +
+      'JOIN usuarios u ON p.id_usuario = u.id_usuario ' +
+      'JOIN materias m ON h.id_materia = m.id_materia ' +
+      'JOIN cursos c ON h.id_curso = c.id_curso ' +
+      'WHERE aus.id_ausencia = ?';
     const rows = await queryAsync(getSql, [result.insertId]);
     return rows[0];
   },
 
   async confirmAbsence(absenceId, { id_usuario, confirmado_por }) {
-    const infoSql = `
-      SELECT 
-        aus.id_ausencia,
-        aus.id_horario,
-        DATE_FORMAT(aus.fecha, '%Y-%m-%d') AS fecha,
-        aus.motivo,
-        CONCAT(u.nombre, ' ', u.apellido) AS profesorNombre,
-        m.nombre AS materia,
-        CONCAT(c.anio, '\u00b0 ', c.division) AS curso,
-        c.id_curso,
-        CONCAT(TIME_FORMAT(h.hora_inicio, '%H:%i'), ' a ', TIME_FORMAT(h.hora_fin, '%H:%i'), ' hs') AS horario,
-        aus.notificar_familias
-      FROM ausencias aus
-      JOIN horarios h ON aus.id_horario = h.id_horario
-      JOIN profesores p ON h.id_profesor = p.id_profesor
-      JOIN usuarios u ON p.id_usuario = u.id_usuario
-      JOIN materias m ON h.id_materia = m.id_materia
-      JOIN cursos c ON h.id_curso = c.id_curso
-      WHERE aus.id_ausencia = ?
-    `;
+    const infoSql =
+      'SELECT ' +
+      '  aus.id_ausencia, ' +
+      '  aus.id_horario, ' +
+      '  DATE_FORMAT(aus.fecha, \'%Y-%m-%d\') AS fecha, ' +
+      '  aus.motivo, ' +
+      '  CONCAT(u.nombre, \' \', u.apellido) AS profesorNombre, ' +
+      '  m.nombre AS materia, ' +
+      '  CONCAT(c.`año`, \'° \', c.division) AS curso, ' +
+      '  c.id_curso, ' +
+      '  CONCAT(TIME_FORMAT(h.hora_inicio, \'%H:%i\'), \' a \', TIME_FORMAT(h.hora_fin, \'%H:%i\'), \' hs\') AS horario, ' +
+      '  aus.notificar_familias ' +
+      'FROM ausencias aus ' +
+      'JOIN horarios h ON aus.id_horario = h.id_horario ' +
+      'JOIN profesores p ON h.id_profesor = p.id_profesor ' +
+      'JOIN usuarios u ON p.id_usuario = u.id_usuario ' +
+      'JOIN materias m ON h.id_materia = m.id_materia ' +
+      'JOIN cursos c ON h.id_curso = c.id_curso ' +
+      'WHERE aus.id_ausencia = ?';
     const ausRows = await queryAsync(infoSql, [absenceId]);
     if (ausRows.length === 0) return null;
 
     const ausData = ausRows[0];
     const nombreConfirmador = confirmado_por || 'Preceptoría';
 
-    const updSql = `
-      UPDATE ausencias 
-      SET estado = 'confirmada', confirmado_por = ?, fecha_confirmacion = CURDATE()
-      WHERE id_ausencia = ?
-    `;
+    const updSql =
+      'UPDATE ausencias ' +
+      'SET estado = \'confirmada\', confirmado_por = ?, fecha_confirmacion = CURDATE() ' +
+      'WHERE id_ausencia = ?';
     await queryAsync(updSql, [nombreConfirmador, absenceId]);
 
     const titulo = `Ausencia Docente: ${ausData.profesorNombre} (${ausData.materia})`;
@@ -544,10 +533,9 @@ const mysqlAdapter = {
     const autorId = id_usuario;
     const notifFamilias = ausData.notificar_familias || 0;
 
-    const insAvisoSql = `
-      INSERT INTO avisos (titulo, contenido, tipo, prioridad, id_usuario, notificar_familias)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `;
+    const insAvisoSql =
+      'INSERT INTO avisos (titulo, contenido, tipo, prioridad, id_usuario, notificar_familias) ' +
+      'VALUES (?, ?, ?, ?, ?, ?)';
     const avResult = await queryAsync(insAvisoSql, [titulo, contenido, tipo, prioridad, autorId, notifFamilias]);
     const nuevoAvisoId = avResult.insertId;
 
@@ -592,22 +580,21 @@ const mysqlAdapter = {
   },
 
   async getTeacherSchedules(userId) {
-    const sql = `
-      SELECT 
-        h.id_horario,
-        m.nombre AS materia,
-        CONCAT(c.anio, '\u00b0 ', c.division) AS curso,
-        h.id_curso,
-        h.dia_semana,
-        TIME_FORMAT(h.hora_inicio, '%H:%i') AS hora_inicio,
-        TIME_FORMAT(h.hora_fin, '%H:%i') AS hora_fin
-      FROM horarios h
-      JOIN profesores p ON h.id_profesor = p.id_profesor
-      JOIN materias m ON h.id_materia = m.id_materia
-      JOIN cursos c ON h.id_curso = c.id_curso
-      WHERE p.id_usuario = ?
-      ORDER BY h.dia_semana, h.hora_inicio
-    `;
+    const sql =
+      'SELECT ' +
+      '  h.id_horario, ' +
+      '  m.nombre AS materia, ' +
+      '  CONCAT(c.`año`, \'° \', c.division) AS curso, ' +
+      '  h.id_curso, ' +
+      '  h.dia_semana, ' +
+      '  TIME_FORMAT(h.hora_inicio, \'%H:%i\') AS hora_inicio, ' +
+      '  TIME_FORMAT(h.hora_fin, \'%H:%i\') AS hora_fin ' +
+      'FROM horarios h ' +
+      'JOIN profesores p ON h.id_profesor = p.id_profesor ' +
+      'JOIN materias m ON h.id_materia = m.id_materia ' +
+      'JOIN cursos c ON h.id_curso = c.id_curso ' +
+      'WHERE p.id_usuario = ? ' +
+      'ORDER BY h.dia_semana, h.hora_inicio';
     return queryAsync(sql, [userId]);
   },
 
