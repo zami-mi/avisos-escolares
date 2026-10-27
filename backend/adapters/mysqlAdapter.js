@@ -41,7 +41,7 @@ const mysqlAdapter = {
         u.rol,
         al.id_curso,
         CASE 
-          WHEN c.id_curso IS NOT NULL THEN CONCAT(c.anio, '° ', c.division)
+          WHEN c.id_curso IS NOT NULL THEN CONCAT(c.anio, '\u00b0 ', c.division)
           ELSE NULL 
         END AS curso,
         c.turno
@@ -72,7 +72,7 @@ const mysqlAdapter = {
         usuario.materias = horRows.map(r => r.materia);
 
         const curSql = `
-          SELECT DISTINCT CONCAT(c.anio, '° ', c.division) AS curso
+          SELECT DISTINCT CONCAT(c.anio, '\u00b0 ', c.division) AS curso
           FROM horarios h
           JOIN cursos c ON h.id_curso = c.id_curso
           WHERE h.id_profesor IN (?)
@@ -87,7 +87,7 @@ const mysqlAdapter = {
       const precSql = `
         SELECT 
           pc.id_curso,
-          CONCAT(c.anio, '° ', c.division) AS curso,
+          CONCAT(c.anio, '\u00b0 ', c.division) AS curso,
           c.turno
         FROM preceptores p
         JOIN preceptor_cursos pc ON p.id_preceptor = pc.id_preceptor
@@ -133,7 +133,7 @@ const mysqlAdapter = {
         ac.id_curso,
         CASE 
           WHEN ac.id_curso IS NULL THEN 'Todos'
-          ELSE CONCAT(c.anio, '° ', c.division)
+          ELSE CONCAT(c.anio, '\u00b0 ', c.division)
         END AS destinatario,
         CONCAT(u.nombre, ' ', u.apellido) AS autor,
         u.rol AS rolAutor
@@ -159,7 +159,7 @@ const mysqlAdapter = {
         ac.id_curso,
         CASE 
           WHEN ac.id_curso IS NULL THEN 'Todos'
-          ELSE CONCAT(c.anio, '° ', c.division)
+          ELSE CONCAT(c.anio, '\u00b0 ', c.division)
         END AS destinatario,
         CONCAT(u.nombre, ' ', u.apellido) AS autor,
         u.rol AS rolAutor
@@ -175,7 +175,7 @@ const mysqlAdapter = {
 
   async resolveCourses(destinatario) {
     if (!destinatario || destinatario === 'Todos' || destinatario === 'Toda la escuela') {
-      const all = await queryAsync("SELECT id_curso, CONCAT(anio, '° ', division) AS curso_nombre FROM cursos ORDER BY anio ASC, division ASC");
+      const all = await queryAsync("SELECT id_curso, CONCAT(anio, '\u00b0 ', division) AS curso_nombre FROM cursos ORDER BY anio ASC, division ASC");
       return { esTodos: true, cursos: all };
     }
 
@@ -184,7 +184,7 @@ const mysqlAdapter = {
 
     for (const d of destinatariosList) {
       if (typeof d === 'number') {
-        const rows = await queryAsync("SELECT id_curso, CONCAT(anio, '° ', division) AS curso_nombre FROM cursos WHERE id_curso = ?", [d]);
+        const rows = await queryAsync("SELECT id_curso, CONCAT(anio, '\u00b0 ', division) AS curso_nombre FROM cursos WHERE id_curso = ?", [d]);
         if (rows.length > 0) cursosEncontrados.push(rows[0]);
         continue;
       }
@@ -195,13 +195,13 @@ const mysqlAdapter = {
         .trim();
 
       const searchSql = `
-        SELECT id_curso, CONCAT(anio, '° ', division) AS curso_nombre 
+        SELECT id_curso, CONCAT(anio, '\u00b0 ', division) AS curso_nombre 
         FROM cursos 
-        WHERE CONCAT(anio, '° ', division) = ? 
+        WHERE CONCAT(anio, '\u00b0 ', division) = ? 
            OR CONCAT(anio, 'to ', division) = ? 
            OR CONCAT(anio, 'ro ', division) = ? 
            OR division = ?
-           OR ? LIKE CONCAT('%', anio, '° ', division, '%')
+           OR ? LIKE CONCAT('%', anio, '\u00b0 ', division, '%')
            OR ? LIKE CONCAT('%', anio, '%', division, '%')
         LIMIT 1
       `;
@@ -305,7 +305,7 @@ const mysqlAdapter = {
           ac.id_curso,
           CASE 
             WHEN ac.id_curso IS NULL THEN 'Todos'
-            ELSE CONCAT(c.anio, '° ', c.division)
+            ELSE CONCAT(c.anio, '\u00b0 ', c.division)
           END AS destinatario,
           CONCAT(u.nombre, ' ', u.apellido) AS autor,
           u.rol AS rolAutor
@@ -378,7 +378,7 @@ const mysqlAdapter = {
         DATE_FORMAT(aus.fecha, '%Y-%m-%d') AS fecha,
         CONCAT(TIME_FORMAT(h.hora_inicio, '%H:%i'), ' a ', TIME_FORMAT(h.hora_fin, '%H:%i'), ' hs') AS horario,
         m.nombre AS materia,
-        CONCAT(c.anio, '° ', c.division) AS curso,
+        CONCAT(c.anio, '\u00b0 ', c.division) AS curso,
         c.id_curso,
         aus.motivo,
         COALESCE(aus.estado, 'pendiente') AS estado,
@@ -406,7 +406,7 @@ const mysqlAdapter = {
         DATE_FORMAT(aus.fecha, '%Y-%m-%d') AS fecha,
         CONCAT(TIME_FORMAT(h.hora_inicio, '%H:%i'), ' a ', TIME_FORMAT(h.hora_fin, '%H:%i'), ' hs') AS horario,
         m.nombre AS materia,
-        CONCAT(c.anio, '° ', c.division) AS curso,
+        CONCAT(c.anio, '\u00b0 ', c.division) AS curso,
         c.id_curso,
         aus.motivo,
         COALESCE(aus.estado, 'pendiente') AS estado,
@@ -434,7 +434,7 @@ const mysqlAdapter = {
         DATE_FORMAT(aus.fecha, '%Y-%m-%d') AS fecha,
         CONCAT(TIME_FORMAT(h.hora_inicio, '%H:%i'), ' a ', TIME_FORMAT(h.hora_fin, '%H:%i'), ' hs') AS horario,
         m.nombre AS materia,
-        CONCAT(c.anio, '° ', c.division) AS curso,
+        CONCAT(c.anio, '\u00b0 ', c.division) AS curso,
         c.id_curso,
         aus.motivo,
         COALESCE(aus.estado, 'pendiente') AS estado,
@@ -483,7 +483,7 @@ const mysqlAdapter = {
         DATE_FORMAT(aus.fecha, '%Y-%m-%d') AS fecha,
         CONCAT(TIME_FORMAT(h.hora_inicio, '%H:%i'), ' a ', TIME_FORMAT(h.hora_fin, '%H:%i'), ' hs') AS horario,
         m.nombre AS materia,
-        CONCAT(c.anio, '° ', c.division) AS curso,
+        CONCAT(c.anio, '\u00b0 ', c.division) AS curso,
         c.id_curso,
         aus.motivo,
         COALESCE(aus.estado, 'pendiente') AS estado,
@@ -511,7 +511,7 @@ const mysqlAdapter = {
         aus.motivo,
         CONCAT(u.nombre, ' ', u.apellido) AS profesorNombre,
         m.nombre AS materia,
-        CONCAT(c.anio, '° ', c.division) AS curso,
+        CONCAT(c.anio, '\u00b0 ', c.division) AS curso,
         c.id_curso,
         CONCAT(TIME_FORMAT(h.hora_inicio, '%H:%i'), ' a ', TIME_FORMAT(h.hora_fin, '%H:%i'), ' hs') AS horario,
         aus.notificar_familias
@@ -596,7 +596,7 @@ const mysqlAdapter = {
       SELECT 
         h.id_horario,
         m.nombre AS materia,
-        CONCAT(c.anio, '° ', c.division) AS curso,
+        CONCAT(c.anio, '\u00b0 ', c.division) AS curso,
         h.id_curso,
         h.dia_semana,
         TIME_FORMAT(h.hora_inicio, '%H:%i') AS hora_inicio,

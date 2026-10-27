@@ -30,8 +30,8 @@ export default function CreateNoticeModal({ isOpen, onClose, onSave, currentUser
   const getDestinatariosOptions = () => {
     const todosOption = { label: "Toda la escuela", value: "Todos" };
     const allCursosOptions = cursosDb.map((c) => ({
-      label: `Curso ${c.año}° ${c.division}`,
-      value: `${c.año}° ${c.division}`,
+      label: `Curso ${c.anio}\u00b0 ${c.division}`,
+      value: `${c.anio}\u00b0 ${c.division}`,
     }));
 
     switch (currentUser?.rol) {
