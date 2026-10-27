@@ -1,32 +1,60 @@
-const conexion = require('../db');
+// pool es el objeto mysql2 Pool exportado por db.js.
+const pool = require('../db');
 const emailService = require('../emailService');
 
-const ANIO_COL = '`anio`';
-
+// Ejecuta una query sobre el pool (obtiene y libera conexión automáticamente).
 function queryAsync(sql, params = []) {
   return new Promise((resolve, reject) => {
-    conexion.query(sql, params, (err, results) => {
-      if (err) return reject(err);
+    pool.query(sql, params, (err, results) => {
+      if (err) {
+        // Log detallado del error SQL para diagnóstico en Render.
+        console.error('[SQL ERROR]', err.code, '|', err.sqlMessage || err.message, '| sql:', sql.slice(0, 200));
+        return reject(err);
+      }
       resolve(results);
     });
   });
 }
 
+// Ejecuta un bloque en transacción usando una conexión dedicada del pool.
 function withTransaction(callback) {
   return new Promise((resolve, reject) => {
-    conexion.beginTransaction(async (err) => {
-      if (err) return reject(err);
-      try {
-        const result = await callback();
-        conexion.commit((commitErr) => {
-          if (commitErr) {
-            return conexion.rollback(() => reject(commitErr));
-          }
-          resolve(result);
-        });
-      } catch (error) {
-        conexion.rollback(() => reject(error));
-      }
+    pool.getConnection((connErr, connection) => {
+      if (connErr) return reject(connErr);
+
+      connection.beginTransaction(async (txErr) => {
+        if (txErr) {
+          connection.release();
+          return reject(txErr);
+        }
+
+        // queryAsync interno que usa la conexión dedicada de la transacción.
+        function qTx(sql, params = []) {
+          return new Promise((res, rej) => {
+            connection.query(sql, params, (err, results) => {
+              if (err) {
+                console.error('[SQL TX ERROR]', err.code, '|', err.sqlMessage || err.message, '| sql:', sql.slice(0, 200));
+                return rej(err);
+              }
+              res(results);
+            });
+          });
+        }
+
+        try {
+          const result = await callback(qTx);
+          connection.commit((commitErr) => {
+            connection.release();
+            if (commitErr) return reject(commitErr);
+            resolve(result);
+          });
+        } catch (error) {
+          connection.rollback(() => {
+            connection.release();
+            reject(error);
+          });
+        }
+      });
     });
   });
 }
@@ -43,7 +71,7 @@ const mysqlAdapter = {
       '  u.rol, ' +
       '  al.id_curso, ' +
       '  CASE ' +
-      '    WHEN c.id_curso IS NOT NULL THEN CONCAT(c.`anio`, \'° \', c.division) ' +
+      '    WHEN c.id_curso IS NOT NULL THEN CONCAT(c.anio, \'° \', c.division) ' +
       '    ELSE NULL ' +
       '  END AS curso, ' +
       '  c.turno ' +
@@ -72,7 +100,7 @@ const mysqlAdapter = {
         usuario.materias = horRows.map(r => r.materia);
 
         const curSql =
-          'SELECT DISTINCT CONCAT(c.`anio`, \'° \', c.division) AS curso ' +
+          'SELECT DISTINCT CONCAT(c.anio, \'° \', c.division) AS curso ' +
           'FROM horarios h ' +
           'JOIN cursos c ON h.id_curso = c.id_curso ' +
           'WHERE h.id_profesor IN (?)';
@@ -86,7 +114,7 @@ const mysqlAdapter = {
       const precSql =
         'SELECT ' +
         '  pc.id_curso, ' +
-        '  CONCAT(c.`anio`, \'° \', c.division) AS curso, ' +
+        '  CONCAT(c.anio, \'° \', c.division) AS curso, ' +
         '  c.turno ' +
         'FROM preceptores p ' +
         'JOIN preceptor_cursos pc ON p.id_preceptor = pc.id_preceptor ' +
@@ -116,7 +144,7 @@ const mysqlAdapter = {
 
   async getCourses() {
     return queryAsync(
-      'SELECT id_curso, `anio` AS anio, division, especialidad, turno FROM cursos ORDER BY `anio` ASC, division ASC'
+      'SELECT id_curso, anio AS anio, division, especialidad, turno FROM cursos ORDER BY anio ASC, division ASC'
     );
   },
 
@@ -126,14 +154,14 @@ const mysqlAdapter = {
       '  a.id_aviso AS id, ' +
       '  a.titulo, ' +
       '  a.contenido, ' +
-      '  DATE_FORMAT(a.fecha_publicacion, \'%Y-%m-%d\') AS fecha, '
+      '  DATE_FORMAT(a.fecha_publicacion, \'%Y-%m-%d\') AS fecha, ' +
       '  a.tipo AS categoria, ' +
       '  a.prioridad, ' +
       '  a.notificar_familias, ' +
       '  ac.id_curso, ' +
       '  CASE ' +
       '    WHEN ac.id_curso IS NULL THEN \'Todos\' ' +
-      '    ELSE CONCAT(c.`anio`, \'° \', c.division) ' +
+      '    ELSE CONCAT(c.anio, \'° \', c.division) ' +
       '  END AS destinatario, ' +
       '  CONCAT(u.nombre, \' \', u.apellido) AS autor, ' +
       '  u.rol AS rolAutor ' +
@@ -158,7 +186,7 @@ const mysqlAdapter = {
       '  ac.id_curso, ' +
       '  CASE ' +
       '    WHEN ac.id_curso IS NULL THEN \'Todos\' ' +
-      '    ELSE CONCAT(c.`anio`, \'° \', c.division) ' +
+      '    ELSE CONCAT(c.anio, \'° \', c.division) ' +
       '  END AS destinatario, ' +
       '  CONCAT(u.nombre, \' \', u.apellido) AS autor, ' +
       '  u.rol AS rolAutor ' +
@@ -174,7 +202,7 @@ const mysqlAdapter = {
   async resolveCourses(destinatario) {
     if (!destinatario || destinatario === 'Todos' || destinatario === 'Toda la escuela') {
       const all = await queryAsync(
-        'SELECT id_curso, CONCAT(`anio`, \'° \', division) AS curso_nombre FROM cursos ORDER BY `anio` ASC, division ASC'
+        'SELECT id_curso, CONCAT(anio, \'° \', division) AS curso_nombre FROM cursos ORDER BY anio ASC, division ASC'
       );
       return { esTodos: true, cursos: all };
     }
@@ -185,7 +213,7 @@ const mysqlAdapter = {
     for (const d of destinatariosList) {
       if (typeof d === 'number') {
         const rows = await queryAsync(
-          'SELECT id_curso, CONCAT(`anio`, \'° \', division) AS curso_nombre FROM cursos WHERE id_curso = ?',
+          'SELECT id_curso, CONCAT(anio, \'° \', division) AS curso_nombre FROM cursos WHERE id_curso = ?',
           [d]
         );
         if (rows.length > 0) cursosEncontrados.push(rows[0]);
@@ -198,14 +226,14 @@ const mysqlAdapter = {
         .trim();
 
       const searchSql =
-        'SELECT id_curso, CONCAT(`anio`, \'° \', division) AS curso_nombre ' +
+        'SELECT id_curso, CONCAT(anio, \'° \', division) AS curso_nombre ' +
         'FROM cursos ' +
-        'WHERE CONCAT(`anio`, \'° \', division) = ? ' +
-        '   OR CONCAT(`anio`, \'to \', division) = ? ' +
-        '   OR CONCAT(`anio`, \'ro \', division) = ? ' +
+        'WHERE CONCAT(anio, \'° \', division) = ? ' +
+        '   OR CONCAT(anio, \'to \', division) = ? ' +
+        '   OR CONCAT(anio, \'ro \', division) = ? ' +
         '   OR division = ? ' +
-        '   OR ? LIKE CONCAT(\'%\', `anio`, \'° \', division, \'%\') ' +
-        '   OR ? LIKE CONCAT(\'%\', `anio`, \'%\', division, \'%\') ' +
+        '   OR ? LIKE CONCAT(\'%\', anio, \'° \', division, \'%\') ' +
+        '   OR ? LIKE CONCAT(\'%\', anio, \'%\', division, \'%\') ' +
         'LIMIT 1';
       const cRows = await queryAsync(searchSql, [clean, clean, clean, clean, clean, clean]);
       if (cRows.length > 0) {
@@ -219,7 +247,7 @@ const mysqlAdapter = {
   },
 
   async createNotice({ titulo, contenido, categoria, destinatario, prioridad, id_usuario, notificar_familias }) {
-    const resultadoTransaccion = await withTransaction(async () => {
+    const resultadoTransaccion = await withTransaction(async (qTx) => {
       const tipoAviso = categoria || 'Institucional';
       const prioridadAviso = prioridad || 'normal';
       const notificarFamiliasVal = notificar_familias ? 1 : 0;
@@ -227,7 +255,7 @@ const mysqlAdapter = {
       const insertSql =
         'INSERT INTO avisos (titulo, contenido, tipo, prioridad, id_usuario, notificar_familias) ' +
         'VALUES (?, ?, ?, ?, ?, ?)';
-      const result = await queryAsync(insertSql, [titulo, contenido, tipoAviso, prioridadAviso, id_usuario, notificarFamiliasVal]);
+      const result = await qTx(insertSql, [titulo, contenido, tipoAviso, prioridadAviso, id_usuario, notificarFamiliasVal]);
       const id_aviso = result.insertId;
 
       const { esTodos, cursos } = await this.resolveCourses(destinatario);
@@ -235,16 +263,16 @@ const mysqlAdapter = {
       // Si no es "Todos", asociamos los cursos en avisos_cursos
       if (!esTodos && cursos.length > 0) {
         const avisosCursosValues = cursos.map(c => [id_aviso, c.id_curso]);
-        await queryAsync('INSERT INTO avisos_cursos (id_aviso, id_curso) VALUES ?', [avisosCursosValues]);
+        await qTx('INSERT INTO avisos_cursos (id_aviso, id_curso) VALUES ?', [avisosCursosValues]);
       }
 
       // 1. Obtener alumnos destinatarios según los cursos del aviso
       let alumnosRows = [];
       if (esTodos) {
-        alumnosRows = await queryAsync('SELECT id_alumno, id_usuario, id_curso FROM alumnos');
+        alumnosRows = await qTx('SELECT id_alumno, id_usuario, id_curso FROM alumnos');
       } else if (cursos.length > 0) {
         const cursosIds = cursos.map(c => c.id_curso);
-        alumnosRows = await queryAsync('SELECT id_alumno, id_usuario, id_curso FROM alumnos WHERE id_curso IN (?)', [cursosIds]);
+        alumnosRows = await qTx('SELECT id_alumno, id_usuario, id_curso FROM alumnos WHERE id_curso IN (?)', [cursosIds]);
       }
 
       const alumnosIdsUsuarios = [];
@@ -262,7 +290,7 @@ const mysqlAdapter = {
       // 2. Registrar notificaciones internas en la DB exclusivamente para los alumnos de la app
       if (alumnosIdsUsuarios.length > 0) {
         const notifValues = alumnosIdsUsuarios.map(userId => [id_aviso, userId, 0, null]);
-        await queryAsync('INSERT INTO notificaciones (id_aviso, id_usuario, leido, fecha_lectura) VALUES ?', [notifValues]);
+        await qTx('INSERT INTO notificaciones (id_aviso, id_usuario, leido, fecha_lectura) VALUES ?', [notifValues]);
       }
 
       // 3. Obtener familias asociadas a los cursos/alumnos si la opción de notificar está activa
@@ -274,14 +302,14 @@ const mysqlAdapter = {
             'FROM familias f ' +
             'JOIN familia_alumno fa ON f.id_familia = fa.id_familia ' +
             'JOIN alumnos al ON fa.id_alumno = al.id_alumno';
-          familiasParaEmail = await queryAsync(famSql);
+          familiasParaEmail = await qTx(famSql);
         } else if (alumnosIdsAlumnos.length > 0) {
           const famSql =
             'SELECT DISTINCT f.email, f.nombre, f.apellido ' +
             'FROM familias f ' +
             'JOIN familia_alumno fa ON f.id_familia = fa.id_familia ' +
             'WHERE fa.id_alumno IN (?)';
-          familiasParaEmail = await queryAsync(famSql, [alumnosIdsAlumnos]);
+          familiasParaEmail = await qTx(famSql, [alumnosIdsAlumnos]);
         }
       }
 
@@ -298,7 +326,7 @@ const mysqlAdapter = {
         '  ac.id_curso, ' +
         '  CASE ' +
         '    WHEN ac.id_curso IS NULL THEN \'Todos\' ' +
-        '    ELSE CONCAT(c.`anio`, \'° \', c.division) ' +
+        '    ELSE CONCAT(c.anio, \'° \', c.division) ' +
         '  END AS destinatario, ' +
         '  CONCAT(u.nombre, \' \', u.apellido) AS autor, ' +
         '  u.rol AS rolAutor ' +
@@ -308,7 +336,7 @@ const mysqlAdapter = {
         'LEFT JOIN usuarios u ON a.id_usuario = u.id_usuario ' +
         'WHERE a.id_aviso = ? ' +
         'LIMIT 1';
-      const noticeRows = await queryAsync(getAvisoSql, [id_aviso]);
+      const noticeRows = await qTx(getAvisoSql, [id_aviso]);
       const avisoCreado = noticeRows[0] || {
         id: id_aviso,
         titulo,
@@ -370,7 +398,7 @@ const mysqlAdapter = {
       '  DATE_FORMAT(aus.fecha, \'%Y-%m-%d\') AS fecha, ' +
       '  CONCAT(TIME_FORMAT(h.hora_inicio, \'%H:%i\'), \' a \', TIME_FORMAT(h.hora_fin, \'%H:%i\'), \' hs\') AS horario, ' +
       '  m.nombre AS materia, ' +
-      '  CONCAT(c.`anio`, \'° \', c.division) AS curso, ' +
+      '  CONCAT(c.anio, \'° \', c.division) AS curso, ' +
       '  c.id_curso, ' +
       '  aus.motivo, ' +
       '  COALESCE(aus.estado, \'pendiente\') AS estado, ' +
@@ -397,7 +425,7 @@ const mysqlAdapter = {
       '  DATE_FORMAT(aus.fecha, \'%Y-%m-%d\') AS fecha, ' +
       '  CONCAT(TIME_FORMAT(h.hora_inicio, \'%H:%i\'), \' a \', TIME_FORMAT(h.hora_fin, \'%H:%i\'), \' hs\') AS horario, ' +
       '  m.nombre AS materia, ' +
-      '  CONCAT(c.`anio`, \'° \', c.division) AS curso, ' +
+      '  CONCAT(c.anio, \'° \', c.division) AS curso, ' +
       '  c.id_curso, ' +
       '  aus.motivo, ' +
       '  COALESCE(aus.estado, \'pendiente\') AS estado, ' +
@@ -424,7 +452,7 @@ const mysqlAdapter = {
       '  DATE_FORMAT(aus.fecha, \'%Y-%m-%d\') AS fecha, ' +
       '  CONCAT(TIME_FORMAT(h.hora_inicio, \'%H:%i\'), \' a \', TIME_FORMAT(h.hora_fin, \'%H:%i\'), \' hs\') AS horario, ' +
       '  m.nombre AS materia, ' +
-      '  CONCAT(c.`anio`, \'° \', c.division) AS curso, ' +
+      '  CONCAT(c.anio, \'° \', c.division) AS curso, ' +
       '  c.id_curso, ' +
       '  aus.motivo, ' +
       '  COALESCE(aus.estado, \'pendiente\') AS estado, ' +
@@ -471,7 +499,7 @@ const mysqlAdapter = {
       '  DATE_FORMAT(aus.fecha, \'%Y-%m-%d\') AS fecha, ' +
       '  CONCAT(TIME_FORMAT(h.hora_inicio, \'%H:%i\'), \' a \', TIME_FORMAT(h.hora_fin, \'%H:%i\'), \' hs\') AS horario, ' +
       '  m.nombre AS materia, ' +
-      '  CONCAT(c.`anio`, \'° \', c.division) AS curso, ' +
+      '  CONCAT(c.anio, \'° \', c.division) AS curso, ' +
       '  c.id_curso, ' +
       '  aus.motivo, ' +
       '  COALESCE(aus.estado, \'pendiente\') AS estado, ' +
@@ -498,7 +526,7 @@ const mysqlAdapter = {
       '  aus.motivo, ' +
       '  CONCAT(u.nombre, \' \', u.apellido) AS profesorNombre, ' +
       '  m.nombre AS materia, ' +
-      '  CONCAT(c.`anio`, \'° \', c.division) AS curso, ' +
+      '  CONCAT(c.anio, \'° \', c.division) AS curso, ' +
       '  c.id_curso, ' +
       '  CONCAT(TIME_FORMAT(h.hora_inicio, \'%H:%i\'), \' a \', TIME_FORMAT(h.hora_fin, \'%H:%i\'), \' hs\') AS horario, ' +
       '  aus.notificar_familias ' +
@@ -580,7 +608,7 @@ const mysqlAdapter = {
       'SELECT ' +
       '  h.id_horario, ' +
       '  m.nombre AS materia, ' +
-      '  CONCAT(c.`anio`, \'° \', c.division) AS curso, ' +
+      '  CONCAT(c.anio, \'° \', c.division) AS curso, ' +
       '  h.id_curso, ' +
       '  h.dia_semana, ' +
       '  TIME_FORMAT(h.hora_inicio, \'%H:%i\') AS hora_inicio, ' +

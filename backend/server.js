@@ -52,7 +52,7 @@ app.get('/api/avisos', async (req, res) => {
     const avisos = await dataAdapter.getNotices();
     res.json(avisos);
   } catch (error) {
-    console.error('Error al consultar avisos:', error);
+    console.error('Error al consultar avisos - code:', error.code, '| sqlMessage:', error.sqlMessage || error.message);
     res.status(500).json({ error: 'Error al consultar avisos escolares' });
   }
 });
