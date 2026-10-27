@@ -175,7 +175,7 @@ const mysqlAdapter = {
 
   async resolveCourses(destinatario) {
     if (!destinatario || destinatario === 'Todos' || destinatario === 'Toda la escuela') {
-      const all = await queryAsync('SELECT id_curso, CONCAT(anio, "° ", division) AS curso_nombre FROM cursos ORDER BY anio ASC, division ASC');
+      const all = await queryAsync("SELECT id_curso, CONCAT(anio, '° ', division) AS curso_nombre FROM cursos ORDER BY anio ASC, division ASC");
       return { esTodos: true, cursos: all };
     }
 
@@ -184,7 +184,7 @@ const mysqlAdapter = {
 
     for (const d of destinatariosList) {
       if (typeof d === 'number') {
-        const rows = await queryAsync('SELECT id_curso, CONCAT(anio, "° ", division) AS curso_nombre FROM cursos WHERE id_curso = ?', [d]);
+        const rows = await queryAsync("SELECT id_curso, CONCAT(anio, '° ', division) AS curso_nombre FROM cursos WHERE id_curso = ?", [d]);
         if (rows.length > 0) cursosEncontrados.push(rows[0]);
         continue;
       }
