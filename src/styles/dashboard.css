@@ -141,6 +141,26 @@
   color: var(--text-muted);
 }
 
+.btn-change-password {
+  background-color: #ffffff;
+  color: #4a5568;
+  border: 1px solid #e2e8f0;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.btn-change-password:hover {
+  background-color: #f7fafc;
+  border-color: #cbd5e0;
+  color: var(--primary);
+}
+
 .btn-logout {
   background-color: transparent;
   color: #c53030;

@@ -8,11 +8,9 @@ export const courseService = {
     return request('/cursos');
   },
 
-  /**
-   * Obtiene los horarios y materias asignadas a un profesor.
-   * @param {number} userId
-   */
+  /* [ROL: Profesor] Consulta exclusiva de horarios y materias asignadas a un profesor - INACTIVO
   async getProfesorSchedules(userId) {
     return request(`/profesor/${userId}/horarios`);
   },
+  */
 };

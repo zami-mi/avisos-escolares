@@ -17,13 +17,11 @@ export const absenceService = {
     return request(`/ausencias${query}`);
   },
 
-  /**
-   * Obtiene las ausencias de un profesor específico.
-   * @param {number} userId
-   */
+  /* [ROL: Profesor] Consulta exclusiva de ausencias de un profesor - INACTIVO
   async getByProfesor(userId) {
     return request(`/ausencias/profesor/${userId}`);
   },
+  */
 
   /**
    * Obtiene las ausencias de los cursos asignados a un preceptor.
@@ -40,16 +38,14 @@ export const absenceService = {
     return request('/ausencias/resumen');
   },
 
-  /**
-   * Registra una nueva ausencia docente.
-   * @param {{ id_horario: number, fecha: string, motivo: string, notificar_familias: boolean }} absenceData
-   */
+  /* [ROL: Profesor] Registro exclusivo de ausencia docente reportada por el profesor - INACTIVO
   async create(absenceData) {
     return request('/ausencias', {
       method: 'POST',
       body: JSON.stringify(absenceData),
     });
   },
+  */
 
   /**
    * Confirma una ausencia docente y genera aviso automático a los alumnos del curso.

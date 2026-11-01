@@ -4,6 +4,7 @@ import NoticeCard from "../components/notices/NoticeCard";
 import NoticeFilters from "../components/notices/NoticeFilters";
 import NoticeDetailModal from "../components/common/NoticeDetailModal";
 import CreateNoticeModal from "../components/notices/CreateNoticeModal";
+import NoticeTimeline from "../components/common/NoticeTimeline";
 
 export default function PreceptorDashboard({
   currentUser,
@@ -96,6 +97,11 @@ export default function PreceptorDashboard({
           </button>
         </div>
       )}
+
+      <NoticeTimeline
+        notices={divisionNotices}
+        onSelectNotice={setSelectedNotice}
+      />
 
       <div className="stats-row">
         <div className="stat-card">

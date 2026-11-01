@@ -1,7 +1,18 @@
+/**
+ * ==============================================================================
+ * [ROL: Profesor] MODAL EXCLUSIVO DE CREACIÓN DE AUSENCIAS DOCENTES - BLOQUEADO
+ * ==============================================================================
+ * Este modal permitía a los profesores cargar ausencias seleccionando sus horarios
+ * y materias. Dado que el rol Profesor se encuentra inactivo, este componente
+ * se conserva bloqueado mediante comentarios para futuras versiones.
+ */
+
+/*
+// [ROL: Profesor] INICIO CÓDIGO ORIGINAL CONSERVADO:
 import { useState, useEffect } from "react";
 import { courseService } from "../../services";
 
-export default function CreateAbsenceModal({ isOpen, onClose, onSave, currentUser }) {
+export default function CreateAbsenceModalOriginal({ isOpen, onClose, onSave, currentUser }) {
   const [horarios, setHorarios] = useState([]);
   const [selectedHorarioId, setSelectedHorarioId] = useState("");
   const [fecha, setFecha] = useState("");
@@ -167,5 +178,11 @@ export default function CreateAbsenceModal({ isOpen, onClose, onSave, currentUse
       </div>
     </div>
   );
+}
+// [ROL: Profesor] FIN CÓDIGO ORIGINAL CONSERVADO
+*/
+
+export default function CreateAbsenceModal() {
+  return null;
 }
 

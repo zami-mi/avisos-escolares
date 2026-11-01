@@ -5,12 +5,17 @@ import "./styles/dashboard.css";
 import { ROLES } from "./data/mockData";
 import { noticeService, absenceService, notificationService } from "./services";
 import Header from "./components/common/Header";
+import ChangePasswordModal from "./components/common/ChangePasswordModal";
 import LoginPage from "./pages/LoginPage";
 import AlumnoDashboard from "./pages/AlumnoDashboard";
+/* [ROL: Profesor] Import exclusivo del panel de Profesor - INACTIVO
 import ProfesorDashboard from "./pages/ProfesorDashboard";
+*/
 import PreceptorDashboard from "./pages/PreceptorDashboard";
 import RegenteDashboard from "./pages/RegenteDashboard";
+/* [ROL: Secretaria] Import exclusivo del panel de Secretaría - INACTIVO
 import SecretariaDashboard from "./pages/SecretariaDashboard";
+*/
 
 function App() {
   // Estado de usuario autenticado mediante la BD real
@@ -23,6 +28,9 @@ function App() {
   const [notices, setNotices] = useState([]);
   const [absences, setAbsences] = useState([]);
   const [readNoticeIds, setReadNoticeIds] = useState([]);
+
+  // Estado para el modal de cambio de contraseña
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   // Estados de carga y error de conexión
   const [loading, setLoading] = useState(() => Boolean(localStorage.getItem("avisos_current_user")));
@@ -39,9 +47,12 @@ function App() {
         const noticesPromise = noticeService.getAll();
 
         let absencesPromise = Promise.resolve([]);
+        /* [ROL: Profesor] Consulta exclusiva de ausencias propias del profesor - INACTIVO
         if (currentUser.rol === ROLES.PROFESOR) {
           absencesPromise = absenceService.getByProfesor(currentUser.id_usuario);
-        } else if (currentUser.rol === ROLES.PRECEPTOR) {
+        } else
+        */
+        if (currentUser.rol === ROLES.PRECEPTOR) {
           absencesPromise = absenceService.getByPreceptor(currentUser.id_usuario);
         } else if (currentUser.rol !== ROLES.ALUMNO) {
           absencesPromise = absenceService.getAll();
@@ -87,16 +98,20 @@ function App() {
   }, [currentUser]);
 
   // Manejadores de sesión estricta
-  function handleLogin(user) {
+  function handleLogin(user, token) {
     setLoading(true);
     setCurrentUser(user);
     localStorage.setItem("avisos_current_user", JSON.stringify(user));
+    if (token) {
+      localStorage.setItem("avisos_auth_token", token);
+    }
   }
 
   function handleLogout() {
     setLoading(false);
     setCurrentUser(null);
     localStorage.removeItem("avisos_current_user");
+    localStorage.removeItem("avisos_auth_token");
     setNotices([]);
     setAbsences([]);
     setReadNoticeIds([]);
@@ -135,6 +150,7 @@ function App() {
     }
   }
 
+  /* [ROL: Profesor] Manejador exclusivo de registro de ausencias del profesor - INACTIVO
   async function handleAddAbsence(newAbsence) {
     try {
       const ausenciaCreada = await absenceService.create({
@@ -153,6 +169,7 @@ function App() {
       alert(error.message || "No se pudo registrar la ausencia.");
     }
   }
+  */
 
   async function handleConfirmAbsence(absenceId) {
     const targetAbsence = absences.find((a) => a.id === absenceId);
@@ -234,6 +251,7 @@ function App() {
           />
         );
 
+      /* [ROL: Profesor] Renderizado exclusivo del panel de Profesor - INACTIVO
       case ROLES.PROFESOR:
         return (
           <ProfesorDashboard
@@ -243,6 +261,7 @@ function App() {
             onAddAbsence={handleAddAbsence}
           />
         );
+      */
 
       case ROLES.PRECEPTOR:
         return (
@@ -267,6 +286,7 @@ function App() {
           />
         );
 
+      /* [ROL: Secretaria] Renderizado exclusivo del panel de Secretaría - INACTIVO
       case ROLES.SECRETARIA:
         return (
           <SecretariaDashboard
@@ -275,13 +295,14 @@ function App() {
             absences={absences}
           />
         );
+      */
 
       default:
         return (
           <div className="dashboard-content">
             <div className="empty-state">
-              <h3>Rol no reconocido</h3>
-              <p>El rol "{currentUser.rol}" no tiene un panel configurado en el sistema.</p>
+              <h3><i className="fa-solid fa-lock" style={{ marginRight: "8px" }}></i> Rol no disponible</h3>
+              <p>El panel para el rol "{currentUser.rol}" no se encuentra activo en el sistema.</p>
             </div>
           </div>
         );
@@ -293,6 +314,12 @@ function App() {
       <Header
         currentUser={currentUser}
         onLogout={handleLogout}
+        onOpenChangePassword={() => setIsChangePasswordOpen(true)}
+      />
+
+      <ChangePasswordModal
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
       />
 
       {connectionError && (

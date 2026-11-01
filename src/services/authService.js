@@ -13,4 +13,23 @@ export const authService = {
       body: JSON.stringify({ email: email.trim(), contrasena }),
     });
   },
+
+  /**
+   * Cambia la contraseña del usuario actualmente autenticado.
+   * La identidad es extraída de forma segura por el backend mediante el token JWT.
+   * @param {string} contrasenaActual
+   * @param {string} nuevaContrasena
+   * @param {string} confirmarContrasena
+   * @returns {Promise<{mensaje: string}>}
+   */
+  async changePassword(contrasenaActual, nuevaContrasena, confirmarContrasena) {
+    return request('/usuarios/cambiar-contrasena', {
+      method: 'POST',
+      body: JSON.stringify({
+        contrasenaActual,
+        nuevaContrasena,
+        confirmarContrasena
+      }),
+    });
+  },
 };

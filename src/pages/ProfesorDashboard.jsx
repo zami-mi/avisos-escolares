@@ -1,3 +1,15 @@
+/**
+ * ==============================================================================
+ * [ROL: Profesor] PANEL EXCLUSIVO DE PROFESOR - BLOQUEADO / CONSERVADO EN COMENTARIOS
+ * ==============================================================================
+ * Este panel permitía a los profesores consultar sus ausencias informadas,
+ * visualizar circulares institucionales y emitir nuevas ausencias docentes.
+ * En la versión actual se mantiene bloqueado e inactivo, conservando todo el
+ * código intacto a continuación para futuras reactivaciones.
+ */
+
+/*
+// [ROL: Profesor] INICIO CÓDIGO ORIGINAL CONSERVADO:
 import { useState } from "react";
 import AbsenceTable from "../components/absences/AbsenceTable";
 import CreateAbsenceModal from "../components/absences/CreateAbsenceModal";
@@ -5,7 +17,7 @@ import NoticeCard from "../components/notices/NoticeCard";
 import NoticeFilters from "../components/notices/NoticeFilters";
 import NoticeDetailModal from "../components/common/NoticeDetailModal";
 
-export default function ProfesorDashboard({
+export default function ProfesorDashboardOriginal({
   currentUser,
   notices,
   absences = [],
@@ -48,7 +60,7 @@ export default function ProfesorDashboard({
     <div className="dashboard-content">
       <div className="welcome-hero">
         <div className="hero-text">
-          <h1>Panel <datalist></datalist>ocente - {currentUser?.nombre}</h1>
+          <h1>Panel Docente - {currentUser?.nombre}</h1>
           <p>
             Materias: <strong>{currentUser?.materias?.join(", ")}</strong> &bull; Cursos asignados:{" "}
             <strong>{currentUser?.cursosAsignados?.join(", ")}</strong>
@@ -141,7 +153,7 @@ export default function ProfesorDashboard({
         </div>
       )}
 
-      {/* Modales */}
+      {/* Modales *
       <CreateAbsenceModal
         isOpen={isAbsenceModalOpen}
         onClose={() => setIsAbsenceModalOpen(false)}
@@ -155,6 +167,19 @@ export default function ProfesorDashboard({
           onClose={() => setSelectedNotice(null)}
         />
       )}
+    </div>
+  );
+}
+// [ROL: Profesor] FIN CÓDIGO ORIGINAL CONSERVADO
+*/
+
+export default function ProfesorDashboard() {
+  return (
+    <div className="dashboard-content">
+      <div className="empty-state">
+        <h3><i className="fa-solid fa-lock" style={{ marginRight: "8px" }}></i> Panel Docente Inactivo</h3>
+        <p>El acceso para el rol de Profesor ha sido deshabilitado temporalmente.</p>
+      </div>
     </div>
   );
 }

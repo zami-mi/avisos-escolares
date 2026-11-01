@@ -3,8 +3,13 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api'
 export async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   
+  // Extraer token de autenticación si está presente en localStorage
+  const token = localStorage.getItem('avisos_auth_token');
+  const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
+
   const headers = {
     'Content-Type': 'application/json',
+    ...authHeaders,
     ...(options.headers || {}),
   };
 
@@ -26,6 +31,12 @@ export async function request(endpoint, options = {}) {
     }
 
     if (!response.ok) {
+      // Si la sesión expiró o el token fue rechazado en rutas autenticadas
+      if (response.status === 401 && endpoint !== '/login') {
+        localStorage.removeItem('avisos_auth_token');
+        localStorage.removeItem('avisos_current_user');
+      }
+
       const errorMessage = (data && data.error) || (typeof data === 'string' && data) || `Error ${response.status}: ${response.statusText}`;
       const error = new Error(errorMessage);
       error.status = response.status;

@@ -2,6 +2,7 @@ import { useState } from "react";
 import NoticeCard from "../components/notices/NoticeCard";
 import NoticeFilters from "../components/notices/NoticeFilters";
 import NoticeDetailModal from "../components/common/NoticeDetailModal";
+import NoticeTimeline from "../components/common/NoticeTimeline";
 
 export default function AlumnoDashboard({
   currentUser,
@@ -74,6 +75,11 @@ export default function AlumnoDashboard({
           </div>
         )}
       </div>
+
+      <NoticeTimeline
+        notices={myCourseNotices}
+        onSelectNotice={handleOpenNotice}
+      />
 
       <div className="stats-row">
         <div className="stat-card">

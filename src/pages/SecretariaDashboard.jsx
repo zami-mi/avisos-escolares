@@ -1,10 +1,22 @@
+/**
+ * ==============================================================================
+ * [ROL: Secretaria] PANEL EXCLUSIVO DE SECRETARÍA - BLOQUEADO / CONSERVADO EN COMENTARIOS
+ * ==============================================================================
+ * Este panel permitía a Secretaría visualizar el historial completo de ausencias
+ * de toda la institución, aplicar filtros multicriterio y consultar todos los avisos.
+ * En la versión actual se mantiene bloqueado e inactivo, conservando todo el
+ * código intacto a continuación para futuras reactivaciones.
+ */
+
+/*
+// [ROL: Secretaria] INICIO CÓDIGO ORIGINAL CONSERVADO:
 import { useState } from "react";
 import AbsenceTable from "../components/absences/AbsenceTable";
 import NoticeCard from "../components/notices/NoticeCard";
 import NoticeFilters from "../components/notices/NoticeFilters";
 import NoticeDetailModal from "../components/common/NoticeDetailModal";
 
-export default function SecretariaDashboard({
+export default function SecretariaDashboardOriginal({
   currentUser,
   notices,
   absences = [],
@@ -280,6 +292,19 @@ export default function SecretariaDashboard({
           onClose={() => setSelectedNotice(null)}
         />
       )}
+    </div>
+  );
+}
+// [ROL: Secretaria] FIN CÓDIGO ORIGINAL CONSERVADO
+*/
+
+export default function SecretariaDashboard() {
+  return (
+    <div className="dashboard-content">
+      <div className="empty-state">
+        <h3><i className="fa-solid fa-lock" style={{ marginRight: "8px" }}></i> Panel de Secretaría Inactivo</h3>
+        <p>El acceso para el rol de Secretaría ha sido deshabilitado temporalmente.</p>
+      </div>
     </div>
   );
 }

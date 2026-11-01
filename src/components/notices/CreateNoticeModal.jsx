@@ -45,6 +45,7 @@ export default function CreateNoticeModal({ isOpen, onClose, onSave, currentUser
       }
       case ROLES.REGENTE:
         return [todosOption, ...allCursosOptions];
+      /* [ROL: Profesor] Opciones de destinatario exclusivas de profesor - INACTIVO
       case ROLES.PROFESOR: {
         const profCursos = currentUser?.cursosAsignados || [];
         const profOptions = profCursos.map((c) => ({
@@ -53,6 +54,7 @@ export default function CreateNoticeModal({ isOpen, onClose, onSave, currentUser
         }));
         return profOptions.length > 0 ? profOptions : [todosOption];
       }
+      */
       default:
         return [todosOption, ...allCursosOptions];
     }

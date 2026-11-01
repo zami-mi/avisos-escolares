@@ -5,6 +5,7 @@ import NoticeFilters from "../components/notices/NoticeFilters";
 import NoticeDetailModal from "../components/common/NoticeDetailModal";
 import CreateNoticeModal from "../components/notices/CreateNoticeModal";
 import { noticeService } from "../services";
+import NoticeTimeline from "../components/common/NoticeTimeline";
 
 export default function RegenteDashboard({
   currentUser,
@@ -92,6 +93,11 @@ export default function RegenteDashboard({
           </button>
         </div>
       </div>
+
+      <NoticeTimeline
+        notices={notices}
+        onSelectNotice={setSelectedNotice}
+      />
 
       <div className="stats-row">
         <div className="stat-card">

@@ -1,6 +1,7 @@
 // pool es el objeto mysql2 Pool exportado por db.js.
 const pool = require('../db');
 const emailService = require('../emailService');
+const bcrypt = require('bcryptjs');
 
 // Ejecuta una query sobre el pool (obtiene y libera conexión automáticamente).
 function queryAsync(sql, params = []) {
@@ -68,6 +69,7 @@ const mysqlAdapter = {
       '  u.nombre, ' +
       '  u.apellido, ' +
       '  u.email, ' +
+      '  u.contrasena, ' +
       '  u.rol, ' +
       '  al.id_curso, ' +
       '  CASE ' +
@@ -78,13 +80,30 @@ const mysqlAdapter = {
       'FROM usuarios u ' +
       'LEFT JOIN alumnos al ON u.id_usuario = al.id_usuario ' +
       'LEFT JOIN cursos c ON al.id_curso = c.id_curso ' +
-      'WHERE u.email = ? AND u.contrasena = ?';
+      'WHERE u.email = ?';
 
-    const rows = await queryAsync(sql, [email, contrasena]);
+    const rows = await queryAsync(sql, [email]);
     if (rows.length === 0) return null;
 
     const usuario = rows[0];
+    const dbPassword = usuario.contrasena || '';
 
+    // Soporte dual: verifica si la contraseña es hash bcrypt o texto plano existente
+    const isBcrypt = dbPassword.startsWith('$2a$') || dbPassword.startsWith('$2b$') || dbPassword.startsWith('$2y$');
+    let passwordMatches = false;
+
+    if (isBcrypt) {
+      passwordMatches = await bcrypt.compare(contrasena, dbPassword);
+    } else {
+      passwordMatches = (contrasena === dbPassword);
+    }
+
+    if (!passwordMatches) return null;
+
+    // Eliminar la contraseña del objeto usuario para proteger los datos
+    delete usuario.contrasena;
+
+    /* [ROL: Profesor] Consulta de materias y cursos asignados al profesor al autenticarse - INACTIVO
     if (usuario.rol === 'profesor') {
       const profRows = await queryAsync('SELECT id_profesor FROM profesores WHERE id_usuario = ?', [usuario.id_usuario]);
       if (profRows.length > 0) {
@@ -110,7 +129,10 @@ const mysqlAdapter = {
         usuario.materias = [];
         usuario.cursosAsignados = [];
       }
-    } else if (usuario.rol === 'preceptor') {
+    }
+    */
+
+    if (usuario.rol === 'preceptor') {
       const precSql =
         'SELECT ' +
         '  pc.id_curso, ' +
@@ -416,6 +438,7 @@ const mysqlAdapter = {
     return queryAsync(sql, params);
   },
 
+  /* [ROL: Profesor] Consulta SQL exclusiva de ausencias por profesor - INACTIVO
   async getAbsencesByProfesor(userId) {
     const sql =
       'SELECT ' +
@@ -442,6 +465,7 @@ const mysqlAdapter = {
       'ORDER BY aus.fecha DESC, aus.id_ausencia DESC';
     return queryAsync(sql, [userId]);
   },
+  */
 
   async getAbsencesByPreceptor(userId) {
     const sql =
@@ -486,6 +510,7 @@ const mysqlAdapter = {
     return rows[0];
   },
 
+  /* [ROL: Profesor] Inserción SQL exclusiva de nueva ausencia reportada por profesor - INACTIVO
   async createAbsence({ id_horario, fecha, motivo, notificar_familias }) {
     const notificarFamiliasVal = notificar_familias ? 1 : 0;
     const insertSql = 'INSERT INTO ausencias (id_horario, fecha, motivo, notificar_familias) VALUES (?, ?, ?, ?)';
@@ -516,6 +541,7 @@ const mysqlAdapter = {
     const rows = await queryAsync(getSql, [result.insertId]);
     return rows[0];
   },
+  */
 
   async confirmAbsence(absenceId, { id_usuario, confirmado_por }) {
     const infoSql =
@@ -603,6 +629,7 @@ const mysqlAdapter = {
     return { ausencia: ausenciaConfirmada, aviso: avisoGenerado };
   },
 
+  /* [ROL: Profesor] Consulta SQL exclusiva de horarios asignados al profesor - INACTIVO
   async getTeacherSchedules(userId) {
     const sql =
       'SELECT ' +
@@ -621,6 +648,7 @@ const mysqlAdapter = {
       'ORDER BY h.dia_semana, h.hora_inicio';
     return queryAsync(sql, [userId]);
   },
+  */
 
   async getReadNotifications(userId) {
     const sql = 'SELECT id_aviso FROM notificaciones WHERE id_usuario = ? AND leido = 1';
@@ -659,6 +687,55 @@ const mysqlAdapter = {
     }
 
     return noticeIds;
+  },
+
+  async updatePassword(userId, contrasenaActual, nuevaContrasena) {
+    const rows = await queryAsync('SELECT id_usuario, contrasena, rol FROM usuarios WHERE id_usuario = ?', [userId]);
+    if (rows.length === 0) {
+      const err = new Error('Usuario no encontrado');
+      err.status = 404;
+      throw err;
+    }
+
+    const usuario = rows[0];
+    const dbPassword = usuario.contrasena || '';
+
+    // Validar contraseña actual con bcrypt (soporte de texto plano para contingencia)
+    const isBcrypt = dbPassword.startsWith('$2a$') || dbPassword.startsWith('$2b$') || dbPassword.startsWith('$2y$');
+    let matches = false;
+    if (isBcrypt) {
+      matches = await bcrypt.compare(contrasenaActual, dbPassword);
+    } else {
+      matches = (contrasenaActual === dbPassword);
+    }
+
+    if (!matches) {
+      const err = new Error('La contraseña actual ingresada es incorrecta');
+      err.status = 400;
+      throw err;
+    }
+
+    // Validar que la nueva contraseña sea distinta a la actual
+    if (contrasenaActual === nuevaContrasena) {
+      const err = new Error('La nueva contraseña no puede ser idéntica a la contraseña actual');
+      err.status = 400;
+      throw err;
+    }
+
+    // Validar longitud mínima
+    if (!nuevaContrasena || nuevaContrasena.trim().length < 4) {
+      const err = new Error('La nueva contraseña debe tener al menos 4 caracteres');
+      err.status = 400;
+      throw err;
+    }
+
+    // Hashear con bcrypt y guardar
+    const saltRounds = 10;
+    const nuevoHash = await bcrypt.hash(nuevaContrasena, saltRounds);
+
+    await queryAsync('UPDATE usuarios SET contrasena = ? WHERE id_usuario = ?', [nuevoHash, userId]);
+
+    return { mensaje: 'Contraseña actualizada correctamente' };
   },
 };
 
