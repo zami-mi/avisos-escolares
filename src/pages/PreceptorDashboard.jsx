@@ -1,5 +1,4 @@
 import { useState } from "react";
-import AbsenceTable from "../components/absences/AbsenceTable";
 import NoticeCard from "../components/notices/NoticeCard";
 import NoticeFilters from "../components/notices/NoticeFilters";
 import NoticeDetailModal from "../components/common/NoticeDetailModal";
@@ -8,13 +7,11 @@ import NoticeTimeline from "../components/common/NoticeTimeline";
 
 export default function PreceptorDashboard({
   currentUser,
-  notices,
-  absences = [],
-  onConfirmAbsence,
+  notices = [],
   onAddNotice,
   onDeleteNotice,
 }) {
-  const [activeTab, setActiveTab] = useState("ausencias");
+  const [activeTab, setActiveTab] = useState("avisos");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [selectedNotice, setSelectedNotice] = useState(null);
@@ -22,13 +19,6 @@ export default function PreceptorDashboard({
 
   // Divisiones reales asignadas al preceptor según la base de datos
   const myDivisions = currentUser?.divisiones || [];
-
-  const relevantAbsences = absences.filter(
-    (a) => !a.curso || myDivisions.includes(a.curso)
-  );
-
-  const pendingAbsences = relevantAbsences.filter((a) => a.estado === "pendiente");
-  const confirmedAbsences = relevantAbsences.filter((a) => a.estado === "confirmada");
 
   // Avisos de sus divisiones
   const divisionNotices = notices.filter((n) => {
@@ -38,7 +28,22 @@ export default function PreceptorDashboard({
     return isMyDivision || isFromPreceptor || target === "Todos";
   });
 
+  // Avisos publicados por el preceptor
+  const myNotices = divisionNotices.filter((n) =>
+    (currentUser?.id_usuario && n.id_usuario === currentUser.id_usuario) ||
+    (n.rolAutor === "preceptor" && currentUser?.nombre && n.autor?.toLowerCase().includes(currentUser.nombre.toLowerCase()))
+  );
+
   const filteredNotices = divisionNotices.filter((notice) => {
+    const matchesSearch =
+      notice.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      notice.contenido.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory =
+      selectedCategory === "Todos" || notice.categoria === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const filteredMyNotices = myNotices.filter((notice) => {
     const matchesSearch =
       notice.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       notice.contenido.toLowerCase().includes(searchTerm.toLowerCase());
@@ -66,37 +71,6 @@ export default function PreceptorDashboard({
           </button>
         </div>
       </div>
-      {pendingAbsences.length > 0 && (
-        <div
-          style={{
-            backgroundColor: "#fffaf0",
-            border: "1px solid #feebc8",
-            borderRadius: "8px",
-            padding: "14px 18px",
-            marginBottom: "24px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: "12px",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <i className="fa-solid fa-triangle-exclamation" style={{ color: "#c05621", fontSize: "1.3rem" }}></i>
-            <div>
-              <strong style={{ color: "#c05621" }}>
-                Tenés {pendingAbsences.length} formulario(s) de ausencia docente pendiente(s) de confirmación.
-              </strong>
-            </div>
-          </div>
-          <button
-            className="btn-pending-absences-action"
-            onClick={() => setActiveTab("ausencias")}
-          >
-            Ver ausencias <i className="fa-solid fa-arrow-right" style={{ fontSize: "0.75rem" }}></i>
-          </button>
-        </div>
-      )}
 
       <NoticeTimeline
         notices={divisionNotices}
@@ -105,52 +79,33 @@ export default function PreceptorDashboard({
 
       <div className="stats-row">
         <div className="stat-card">
-          <div className="stat-label">Ausencias pendientes</div>
-          <div
-            className="stat-value"
-            style={{ color: pendingAbsences.length > 0 ? "#e53e3e" : "#22543d" }}
-          >
-            {pendingAbsences.length}
-          </div>
+          <div className="stat-label">Avisos de mis cursos</div>
+          <div className="stat-value">{divisionNotices.length}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-label">Ausencias confirmadas</div>
-          <div className="stat-value" style={{ color: "#22543d" }}>
-            {confirmedAbsences.length}
+          <div className="stat-label">Mis avisos publicados</div>
+          <div className="stat-value" style={{ color: "#3182ce" }}>
+            {myNotices.length}
           </div>
         </div>
       </div>
 
       <div className="tabs-nav">
         <button
-          className={`tab-btn ${activeTab === "ausencias" ? "active" : ""}`}
-          onClick={() => setActiveTab("ausencias")}
-        >
-          <i className="fa-regular fa-file-lines"></i>Ausencia docente ({relevantAbsences.length})
-        </button>
-        <button
           className={`tab-btn ${activeTab === "avisos" ? "active" : ""}`}
           onClick={() => setActiveTab("avisos")}
         >
           <i className="fa-regular fa-bell"></i> Avisos de mis cursos ({divisionNotices.length})
         </button>
+        <button
+          className={`tab-btn ${activeTab === "misAvisos" ? "active" : ""}`}
+          onClick={() => setActiveTab("misAvisos")}
+        >
+          <i className="fa-solid fa-pen-to-square"></i> Mis avisos ({myNotices.length})
+        </button>
       </div>
-      {activeTab === "ausencias" ? (
-        <div>
-          <div style={{ marginBottom: "16px" }}>
-            <h3 style={{ margin: 0, color: "#2d3748" }}>
-              Ausencia de docentes
-            </h3>
-          </div>
 
-          <AbsenceTable
-            absences={relevantAbsences}
-            canConfirm={true}
-            onConfirmAbsence={onConfirmAbsence}
-            emptyMessage="No hay ausencias pendientes para tus divisiones."
-          />
-        </div>
-      ) : (
+      {activeTab === "avisos" ? (
         <div>
           <NoticeFilters
             searchTerm={searchTerm}
@@ -167,7 +122,11 @@ export default function PreceptorDashboard({
                   notice={notice}
                   onSelect={setSelectedNotice}
                   onDelete={onDeleteNotice}
-                  canDelete={notice.rolAutor === "preceptor"}
+                  canDelete={
+                    notice.rolAutor === "preceptor" ||
+                    (currentUser?.id_usuario && notice.id_usuario === currentUser.id_usuario) ||
+                    (currentUser?.nombre && notice.autor?.toLowerCase().includes(currentUser.nombre.toLowerCase()))
+                  }
                 />
               ))}
             </div>
@@ -177,7 +136,35 @@ export default function PreceptorDashboard({
             </div>
           )}
         </div>
+      ) : (
+        <div>
+          <NoticeFilters
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+          />
+
+          {filteredMyNotices.length > 0 ? (
+            <div className="notices-grid">
+              {filteredMyNotices.map((notice) => (
+                <NoticeCard
+                  key={notice.id}
+                  notice={notice}
+                  onSelect={setSelectedNotice}
+                  onDelete={onDeleteNotice}
+                  canDelete={true}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <h3>No tenés avisos publicados</h3>
+            </div>
+          )}
+        </div>
       )}
+
       {selectedNotice && (
         <NoticeDetailModal
           notice={selectedNotice}

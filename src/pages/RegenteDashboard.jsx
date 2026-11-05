@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import AbsenceTable from "../components/absences/AbsenceTable";
 import NoticeCard from "../components/notices/NoticeCard";
 import NoticeFilters from "../components/notices/NoticeFilters";
 import NoticeDetailModal from "../components/common/NoticeDetailModal";
@@ -9,12 +8,11 @@ import NoticeTimeline from "../components/common/NoticeTimeline";
 
 export default function RegenteDashboard({
   currentUser,
-  notices,
-  absences = [],
+  notices = [],
   onAddNotice,
   onDeleteNotice,
 }) {
-  const [activeTab, setActiveTab] = useState("ausencias");
+  const [activeTab, setActiveTab] = useState("avisos");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [selectedNotice, setSelectedNotice] = useState(null);
@@ -53,8 +51,6 @@ export default function RegenteDashboard({
         .catch(() => { });
     }
   };
-
-  const pendingAbsences = absences.filter((a) => a.estado === "pendiente");
 
   const filteredNotices = notices.filter((notice) => {
     const matchesSearch =
@@ -101,14 +97,8 @@ export default function RegenteDashboard({
 
       <div className="stats-row">
         <div className="stat-card">
-          <div className="stat-label">Total de ausencias</div>
-          <div className="stat-value">{absences.length}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Ausencias pendientes</div>
-          <div className="stat-value" style={{ color: pendingAbsences.length > 0 ? "#dd6b20" : "#2d3748" }}>
-            {pendingAbsences.length}
-          </div>
+          <div className="stat-label">Total de avisos</div>
+          <div className="stat-value">{notices.length}</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">Mis avisos publicados</div>
@@ -119,12 +109,6 @@ export default function RegenteDashboard({
       </div>
 
       <div className="tabs-nav">
-        <button
-          className={`tab-btn ${activeTab === "ausencias" ? "active" : ""}`}
-          onClick={() => setActiveTab("ausencias")}
-        >
-          <i className="fa-solid fa-clipboard-list"></i>Ausencias docentes ({absences.length})
-        </button>
         <button
           className={`tab-btn ${activeTab === "avisos" ? "active" : ""}`}
           onClick={() => setActiveTab("avisos")}
@@ -139,24 +123,7 @@ export default function RegenteDashboard({
         </button>
       </div>
 
-      {activeTab === "ausencias" ? (
-        <div>
-          <div style={{ marginBottom: "16px" }}>
-            <h3 style={{ margin: 0, color: "#2d3748" }}>
-              Panel de ausencias
-            </h3>
-            <p style={{ margin: "4px 0 0 0", fontSize: "0.85rem", color: "#718096" }}>
-              Información de ausencias remitidas por profesores.
-            </p>
-          </div>
-
-          <AbsenceTable
-            absences={absences}
-            canConfirm={false}
-            emptyMessage="No hay registros de ausencias docentes."
-          />
-        </div>
-      ) : activeTab === "avisos" ? (
+      {activeTab === "avisos" ? (
         <div>
           <NoticeFilters
             searchTerm={searchTerm}
