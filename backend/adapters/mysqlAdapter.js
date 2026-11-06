@@ -164,6 +164,22 @@ const mysqlAdapter = {
     return rows.length > 0 ? rows[0] : null;
   },
 
+  /**
+   * Devuelve los cursos asignados a un preceptor por su id_usuario.
+   * Usado en la validación del endpoint POST /api/avisos para el rol preceptor.
+   */
+  async getCursosByPreceptor(userId) {
+    const sql =
+      'SELECT ' +
+      '  pc.id_curso, ' +
+      '  CONCAT(c.anio, \'° \', c.division) AS curso ' +
+      'FROM preceptores p ' +
+      'JOIN preceptor_cursos pc ON p.id_preceptor = pc.id_preceptor ' +
+      'JOIN cursos c ON pc.id_curso = c.id_curso ' +
+      'WHERE p.id_usuario = ?';
+    return queryAsync(sql, [userId]);
+  },
+
   async getCourses() {
     return queryAsync(
       'SELECT id_curso, anio AS anio, division, especialidad, turno FROM cursos ORDER BY anio ASC, division ASC'
@@ -227,6 +243,20 @@ const mysqlAdapter = {
         'SELECT id_curso, CONCAT(anio, \'° \', division) AS curso_nombre FROM cursos ORDER BY anio ASC, division ASC'
       );
       return { esTodos: true, cursos: all };
+    }
+
+    // Opciones de turno exclusivas del rol regente
+    const turnoMap = {
+      'Turno Mañana': 'Mañana',
+      'Turno Tarde': 'Tarde',
+      'Turno Noche': 'Noche',
+    };
+    if (turnoMap[destinatario] !== undefined) {
+      const cursos = await queryAsync(
+        'SELECT id_curso, CONCAT(anio, \'° \', division) AS curso_nombre FROM cursos WHERE turno = ? ORDER BY anio ASC, division ASC',
+        [turnoMap[destinatario]]
+      );
+      return { esTodos: false, cursos };
     }
 
     const destinatariosList = Array.isArray(destinatario) ? destinatario : [destinatario];

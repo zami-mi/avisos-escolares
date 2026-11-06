@@ -7,6 +7,7 @@
  * MÉTODOS OBLIGATORIOS ACTIVOS:
  * - authenticateUser(email, password): Promise<UserSession>
  * - getCourses(): Promise<Course[]>
+ * - getCursosByPreceptor(userId): Promise<{ id_curso, curso }[]>
  * - getNotices(): Promise<Notice[]>
  * - getNoticesByAuthor(userId): Promise<Notice[]>
  * - createNotice(noticeData): Promise<Notice>

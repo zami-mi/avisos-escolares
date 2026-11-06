@@ -52,7 +52,10 @@ export default function RegenteDashboard({
     }
   };
 
-  const filteredNotices = notices.filter((notice) => {
+  // Solo los avisos emitidos por regentes son visibles en este panel
+  const regenteNotices = notices.filter((n) => n.rolAutor === 'regente');
+
+  const filteredNotices = regenteNotices.filter((notice) => {
     const matchesSearch =
       notice.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       notice.contenido.toLowerCase().includes(searchTerm.toLowerCase());
@@ -91,19 +94,19 @@ export default function RegenteDashboard({
       </div>
 
       <NoticeTimeline
-        notices={notices}
+        notices={regenteNotices}
         onSelectNotice={setSelectedNotice}
       />
 
       <div className="stats-row">
         <div className="stat-card">
           <div className="stat-label">Total de avisos</div>
-          <div className="stat-value">{notices.length}</div>
+          <div className="stat-value">{regenteNotices.length}</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">Mis avisos publicados</div>
           <div className="stat-value" style={{ color: "#3182ce" }}>
-            {myNotices.length > 0 ? myNotices.length : notices.filter(n => n.rolAutor === "regente").length}
+            {myNotices.length > 0 ? myNotices.length : regenteNotices.filter(n => n.rolAutor === "regente").length}
           </div>
         </div>
       </div>
@@ -113,7 +116,7 @@ export default function RegenteDashboard({
           className={`tab-btn ${activeTab === "avisos" ? "active" : ""}`}
           onClick={() => setActiveTab("avisos")}
         >
-          <i className="fa-solid fa-magnifying-glass"></i>Todos los avisos ({notices.length})
+          <i className="fa-solid fa-magnifying-glass"></i>Todos los avisos ({regenteNotices.length})
         </button>
         <button
           className={`tab-btn ${activeTab === "misAvisos" ? "active" : ""}`}

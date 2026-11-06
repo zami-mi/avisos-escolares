@@ -37,14 +37,19 @@ export default function CreateNoticeModal({ isOpen, onClose, onSave, currentUser
     switch (currentUser?.rol) {
       case ROLES.PRECEPTOR: {
         const myDivs = currentUser?.divisiones || [];
-        const divOptions = myDivs.map((div) => ({
+        // El preceptor solo puede seleccionar sus cursos asignados (sin "Toda la escuela")
+        return myDivs.map((div) => ({
           label: `Curso ${div}`,
           value: div,
         }));
-        return [...divOptions, todosOption];
       }
       case ROLES.REGENTE:
-        return [todosOption, ...allCursosOptions];
+        return [
+          { label: "Toda la escuela", value: "Todos" },
+          { label: "Turno mañana", value: "Turno Mañana" },
+          { label: "Turno tarde", value: "Turno Tarde" },
+          { label: "Turno noche", value: "Turno Noche" },
+        ];
       /* [ROL: Profesor] Opciones de destinatario exclusivas de profesor - INACTIVO
       case ROLES.PROFESOR: {
         const profCursos = currentUser?.cursosAsignados || [];
@@ -205,7 +210,9 @@ export default function CreateNoticeModal({ isOpen, onClose, onSave, currentUser
               >
                 <option value="normal">Normal</option>
                 <option value="media">Media</option>
-                <option value="alta">Alta</option>
+                {currentUser?.rol !== ROLES.PRECEPTOR && (
+                  <option value="alta">Alta</option>
+                )}
               </select>
             </div>
           </div>
@@ -241,23 +248,25 @@ export default function CreateNoticeModal({ isOpen, onClose, onSave, currentUser
             ></textarea>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", margin: "14px 0" }}>
-            <input
-              id="notice-notificar-familias"
-              type="checkbox"
-              checked={notificarFamilias}
-              onChange={(e) => setNotificarFamilias(e.target.checked)}
-              disabled={isSubmitting}
-              style={{ width: "16px", height: "16px", cursor: isSubmitting ? "not-allowed" : "pointer" }}
-            />
-            <label
-              htmlFor="notice-notificar-familias"
-              style={{ margin: 0, cursor: isSubmitting ? "not-allowed" : "pointer", fontSize: "0.88rem", fontWeight: "600", color: "#4a5568" }}
-            >
-              <i className="fa-regular fa-envelope" style={{ marginRight: "6px" }}></i>
-              Notificar a las familias por correo electrónico
-            </label>
-          </div>
+          {currentUser?.rol !== ROLES.PRECEPTOR && (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", margin: "14px 0" }}>
+              <input
+                id="notice-notificar-familias"
+                type="checkbox"
+                checked={notificarFamilias}
+                onChange={(e) => setNotificarFamilias(e.target.checked)}
+                disabled={isSubmitting}
+                style={{ width: "16px", height: "16px", cursor: isSubmitting ? "not-allowed" : "pointer" }}
+              />
+              <label
+                htmlFor="notice-notificar-familias"
+                style={{ margin: 0, cursor: isSubmitting ? "not-allowed" : "pointer", fontSize: "0.88rem", fontWeight: "600", color: "#4a5568" }}
+              >
+                <i className="fa-regular fa-envelope" style={{ marginRight: "6px" }}></i>
+                Notificar a las familias por correo electrónico
+              </label>
+            </div>
+          )}
 
           <div className="modal-footer">
             <button type="button" className="btn-secondary" onClick={onClose} disabled={isSubmitting}>

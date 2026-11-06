@@ -156,9 +156,49 @@ app.post('/api/avisos', authenticateToken, requireRoles(/* 'profesor', [ROL: Pro
   const { titulo, contenido, categoria, destinatario, prioridad, notificar_familias } = req.body;
   // Identidad garantizada mediante el token verificado
   const id_usuario = req.user.id_usuario;
+  const rolUsuario = req.user.rol;
 
   if (!titulo || !contenido) {
     return res.status(400).json({ error: 'Título y contenido son obligatorios' });
+  }
+
+  // Validaciones exclusivas para el rol preceptor
+  if (rolUsuario === 'preceptor') {
+    // a) Prioridad permitida: solo normal o media
+    const PRIORIDADES_PERMITIDAS_PRECEPTOR = ['normal', 'media'];
+    const prioridadSolicitada = (prioridad || 'normal').toLowerCase();
+    if (!PRIORIDADES_PERMITIDAS_PRECEPTOR.includes(prioridadSolicitada)) {
+      return res.status(403).json({ error: 'El preceptor solo puede usar prioridad Normal o Media' });
+    }
+
+    // b) Verificar que el curso seleccionado esté asignado al preceptor
+    if (!destinatario || destinatario === 'Todos' || destinatario === 'Toda la escuela') {
+      return res.status(403).json({ error: 'El preceptor solo puede publicar avisos para sus cursos asignados' });
+    }
+
+    try {
+      const cursosPreceptor = await dataAdapter.getCursosByPreceptor(id_usuario);
+      const cursoAsignado = cursosPreceptor.some((c) => {
+        const nombreCurso = c.curso || '';
+        const destinatarioClean = String(destinatario).replace(/^Curso\s+/i, '').trim();
+        return nombreCurso === destinatarioClean || nombreCurso === destinatario;
+      });
+
+      if (!cursoAsignado) {
+        return res.status(403).json({ error: 'Solo podés publicar avisos para los cursos que tenés asignados' });
+      }
+    } catch (error) {
+      console.error('Error al verificar cursos del preceptor:', error);
+      return res.status(500).json({ error: 'Error al verificar cursos asignados al preceptor' });
+    }
+  }
+
+  // Validaciones exclusivas para el rol regente
+  if (rolUsuario === 'regente') {
+    const DESTINATARIOS_PERMITIDOS_REGENTE = ['Todos', 'Turno Mañana', 'Turno Tarde', 'Turno Noche'];
+    if (!destinatario || !DESTINATARIOS_PERMITIDOS_REGENTE.includes(destinatario)) {
+      return res.status(400).json({ error: 'Destinatario inválido para el regente. Las opciones válidas son: Toda la escuela, Turno Mañana, Turno Tarde o Turno Noche' });
+    }
   }
 
   try {
