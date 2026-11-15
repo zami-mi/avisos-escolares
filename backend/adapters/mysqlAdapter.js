@@ -1,4 +1,4 @@
-// pool es el objeto mysql2 Pool exportado por db.js.
+﻿// pool es el objeto mysql2 Pool exportado por db.js.
 const pool = require('../db');
 const emailService = require('../emailService');
 const bcrypt = require('bcryptjs');
@@ -306,7 +306,7 @@ const mysqlAdapter = {
           'SELECT al.id_alumno, al.id_usuario, al.id_curso, u.email, u.nombre, u.apellido ' +
           'FROM alumnos al ' +
           'JOIN usuarios u ON al.id_usuario = u.id_usuario ' +
-          'WHERE u.rol = "alumno"';
+          "WHERE u.rol = 'alumno'";
         alumnosRows = await qTx(sqlAlumnos);
       } else if (cursos.length > 0) {
         const cursosIds = cursos.map(c => c.id_curso);
@@ -314,7 +314,7 @@ const mysqlAdapter = {
           'SELECT al.id_alumno, al.id_usuario, al.id_curso, u.email, u.nombre, u.apellido ' +
           'FROM alumnos al ' +
           'JOIN usuarios u ON al.id_usuario = u.id_usuario ' +
-          'WHERE u.rol = "alumno" AND al.id_curso IN (?)';
+          "WHERE u.rol = 'alumno' AND al.id_curso IN (?)";
         alumnosRows = await qTx(sqlAlumnos, [cursosIds]);
       }
 
