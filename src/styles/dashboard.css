@@ -1,29 +1,28 @@
-
 :root {
-  --primary:       #b81b14;
+  --primary: #b81b14;
   --primary-hover: #8b1817;
   --primary-light: rgba(184, 27, 20, 0.08);
-  --primary-ring:  rgba(184, 27, 20, 0.18);
+  --primary-ring: rgba(184, 27, 20, 0.18);
 
-  --bg-app:        #f6f5f5;
-  --card-bg:       #ffffff;
+  --bg-app: #f6f5f5;
+  --card-bg: #ffffff;
 
-  --text-main:     #2d3748;
-  --text-heading:  #1a202c;
-  --text-muted:    #718096;
-  --text-subtle:   #a0aec0;
+  --text-main: #2d3748;
+  --text-heading: #1a202c;
+  --text-muted: #718096;
+  --text-subtle: #a0aec0;
 
-  --border:        #e2e8f0;
-  --border-focus:  #b81b14;
+  --border: #e2e8f0;
+  --border-focus: #b81b14;
 
-  --shadow-xs:  0 1px 3px rgba(0,0,0,0.06);
-  --shadow-sm:  0 2px 6px rgba(0,0,0,0.07);
-  --shadow-md:  0 4px 14px rgba(0,0,0,0.09);
-  --shadow-lg:  0 10px 28px rgba(0,0,0,0.12);
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.07);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.09);
+  --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.12);
 
-  --radius-sm:  6px;
-  --radius-md:  10px;
-  --radius-lg:  14px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
 
   --transition: 0.18s ease;
 }
@@ -195,12 +194,6 @@
   border: 1px solid #bee3f8;
 }
 
-.role-badge.profesor {
-  background-color: #faf5ff;
-  color: #6b46c1;
-  border: 1px solid #e9d8fd;
-}
-
 .role-badge.preceptor {
   background-color: #fffaf0;
   color: #c05621;
@@ -213,10 +206,24 @@
   border: 1px solid #c6f6d5;
 }
 
-.role-badge.secretaria {
+.role-badge.jefe_taller,
+.role-badge.jefe_de_taller {
+  background-color: #faf5ff;
+  color: #6b46c1;
+  border: 1px solid #e9d8fd;
+}
+
+.role-badge.directivo,
+.role-badge.director {
   background-color: #fff5f5;
   color: #9b2c2c;
   border: 1px solid #fed7d7;
+}
+
+.role-badge.autoridad {
+  background-color: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fcd34d;
 }
 
 .dashboard-content {
@@ -323,12 +330,13 @@
 .btn-secondary,
 .btn-primary-action,
 .btn-read-more,
+.btn-edit-notice,
 .btn-delete-notice,
 .btn-toggle-read,
 .btn-close-modal,
 .btn-mark-all-read,
-.btn-pending-absences-action,
-.btn-confirm-absence,
+.btn-modal-cancel,
+.btn-modal-submit,
 .chip-btn,
 .tab-btn,
 .btn-quick-role {
@@ -458,6 +466,225 @@
   gap: 18px;
 }
 
+.daily-notices-panel {
+  background-color: #ffffff;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: var(--radius-lg, 14px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+.daily-notices-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.daily-notices-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.daily-notices-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background-color: #fff5f5;
+  border: 1px solid #fed7d7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary, #b81b14);
+  font-size: 1rem;
+}
+
+.daily-notices-heading {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #1a202c;
+  letter-spacing: -0.2px;
+}
+
+.daily-notices-date-sub {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  color: #718096;
+}
+
+.daily-notices-badge-active {
+  background-color: #fff5f5;
+  color: #b81b14;
+  border: 1px solid #feb2b2;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.daily-notices-badge-active i {
+  color: #b81b14;
+}
+
+.daily-notices-badge-zero {
+  background-color: #f0fff4;
+  color: #276749;
+  border: 1px solid #c6f6d5;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.daily-notices-body {
+  padding: 16px 20px;
+}
+
+.daily-notices-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 14px;
+}
+
+.daily-notice-item {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  transition: all 0.18s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  position: relative;
+}
+
+.daily-notice-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: #cbd5e0;
+}
+
+.daily-notice-item.prioridad-baja {
+  border-left: 4px solid #a0aec0;
+}
+
+.daily-notice-item.prioridad-media,
+.daily-notice-item.prioridad-normal {
+  border-left: 4px solid #eab308;
+}
+
+.daily-notice-item.prioridad-alta,
+.daily-notice-item.prioridad-urgente {
+  border-left: 4px solid #b81b14;
+}
+
+.daily-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.daily-item-target {
+  font-size: 0.74rem;
+  color: #718096;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+
+.daily-item-title {
+  margin: 6px 0 4px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #2d3748;
+  line-height: 1.35;
+}
+
+.daily-item-preview {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #718096;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.daily-item-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid #f0f4f8;
+  font-size: 0.74rem;
+  color: #718096;
+}
+
+.daily-item-author {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 170px;
+}
+
+.btn-daily-view {
+  background: transparent;
+  border: 1px solid #fed7d7;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #b81b14;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.btn-daily-view:hover {
+  background: #fff5f5;
+  border-color: #feb2b2;
+  color: #8b1817;
+}
+
+.daily-empty-state {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 4px;
+}
+
+.daily-empty-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background-color: #f7fafc;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #718096;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
 /* ================================================================
    TARJETA DE AVISO
    ================================================================ */
@@ -482,10 +709,46 @@
   box-shadow: var(--shadow-md);
 }
 
-/* Barras laterales de prioridad */
-.notice-card.prioridad-alta   { border-left: 4px solid #e53e3e; }
-.notice-card.prioridad-media  { border-left: 4px solid #dd6b20; }
-.notice-card.prioridad-normal { border-left: 4px solid #3182ce; }
+/* Barras laterales de prioridad: Baja (Gris), Media (Amarillo), Alta/Urgente (Rojo) */
+.notice-card.prioridad-baja {
+  border-left: 4px solid #a0aec0;
+}
+
+.notice-card.prioridad-media,
+.notice-card.prioridad-normal {
+  border-left: 4px solid #eab308;
+}
+
+.notice-card.prioridad-alta,
+.notice-card.prioridad-urgente {
+  border-left: 4px solid #b81b14;
+}
+
+/* Resaltado de avisos publicados durante el día actual */
+.notice-card.is-today {
+  border-color: #feb2b2;
+  background: linear-gradient(180deg, #ffffff 0%, #fffafa 100%);
+  box-shadow: 0 0 0 1.5px rgba(184, 27, 20, 0.3), 0 4px 12px rgba(184, 27, 20, 0.08);
+  position: relative;
+}
+
+.notice-card.is-today:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 2px rgba(184, 27, 20, 0.45), 0 6px 18px rgba(184, 27, 20, 0.14);
+}
+
+.notice-card.is-today::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 22px 22px 0;
+  border-color: transparent #b81b14 transparent transparent;
+  pointer-events: none;
+}
 
 /* Tarjeta leída: levemente opaca */
 .notice-card.is-read {
@@ -497,6 +760,30 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 8px;
+}
+
+.card-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Badge HOY */
+.notice-today-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background-color: #fff5f5;
+  color: #b81b14;
+  letter-spacing: 0.4px;
+  border: 1px solid #feb2b2;
+  flex-shrink: 0;
+  line-height: 1.3;
+  display: inline-flex;
+  align-items: center;
 }
 
 /* Badge URGENTE */
@@ -531,23 +818,73 @@
   line-height: 1.3;
 }
 
-.notice-category-badge.cat-ausencias-y-horarios        { background-color: #feebc8; color: #7b341e; border: 1px solid #fbd38d; }
-.notice-category-badge.cat-infraestructura-y-servicios { background-color: #fed7d7; color: #9b2c2c; border: 1px solid #feb2b2; }
-.notice-category-badge.cat-calendario-escolar          { background-color: #e9d8fd; color: #553c9e; border: 1px solid #d6bcfa; }
-.notice-category-badge.cat-reuniones-y-eventos         { background-color: #c6f6d5; color: #22543d; border: 1px solid #9ae6b4; }
-.notice-category-badge.cat-comunidad-y-cooperadora     { background-color: #bee3f8; color: #2b6cb0; border: 1px solid #90cdf4; }
+.notice-category-badge.cat-ausencias-y-horarios {
+  background-color: #feebc8;
+  color: #7b341e;
+  border: 1px solid #fbd38d;
+}
+
+.notice-category-badge.cat-infraestructura-y-servicios {
+  background-color: #fed7d7;
+  color: #9b2c2c;
+  border: 1px solid #feb2b2;
+}
+
+.notice-category-badge.cat-calendario-escolar {
+  background-color: #e9d8fd;
+  color: #553c9e;
+  border: 1px solid #d6bcfa;
+}
+
+.notice-category-badge.cat-reuniones-y-eventos {
+  background-color: #c6f6d5;
+  color: #22543d;
+  border: 1px solid #9ae6b4;
+}
+
+.notice-category-badge.cat-comunidad-y-cooperadora {
+  background-color: #bee3f8;
+  color: #2b6cb0;
+  border: 1px solid #90cdf4;
+}
 
 /* Compat. retroactiva */
-.notice-category-badge.urgente       { background-color: #fed7d7; color: #9b2c2c; }
-.notice-category-badge.académico     { background-color: #e9d8fd; color: #553c9e; }
-.notice-category-badge.institucional { background-color: #feebc8; color: #9c4221; }
-.notice-category-badge.administrativo{ background-color: #e2e8f0; color: #2d3748; }
+.notice-category-badge.urgente {
+  background-color: #fed7d7;
+  color: #9b2c2c;
+}
+
+.notice-category-badge.académico {
+  background-color: #e9d8fd;
+  color: #553c9e;
+}
+
+.notice-category-badge.institucional {
+  background-color: #feebc8;
+  color: #9c4221;
+}
+
+.notice-category-badge.administrativo {
+  background-color: #e2e8f0;
+  color: #2d3748;
+}
 
 .notice-date {
   font-size: 0.73rem;
   color: var(--text-muted);
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+.notice-date.is-today-date {
+  color: #b81b14;
+  font-weight: 700;
+  background-color: #fff5f5;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid #fed7d7;
+  display: inline-flex;
+  align-items: center;
 }
 
 .notice-title {
@@ -643,6 +980,35 @@
   background: #e53e3e;
   color: #ffffff;
   border-color: #e53e3e;
+}
+
+.btn-edit-notice {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #fffbf0;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  padding: 5px 11px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition: all var(--transition);
+  box-shadow: 0 1px 2px rgba(180, 120, 0, 0.07);
+}
+
+.btn-edit-notice:hover {
+  background: #fef3c7;
+  color: #78350f;
+  border-color: #f59e0b;
+  box-shadow: 0 2px 6px rgba(180, 120, 0, 0.14);
+  transform: translateY(-1px);
+}
+
+.btn-edit-notice:active {
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 /* Botón leído / no leído */
@@ -775,11 +1141,72 @@
   color: var(--text-main);
 }
 
-.modal-footer {
+.modal-footer,
+.modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 22px;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.btn-modal-cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background-color: #f7fafc;
+  color: #4a5568;
+  border: 1px solid #cbd5e0;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all var(--transition);
+}
+
+.btn-modal-cancel:hover:not(:disabled) {
+  background-color: #edf2f7;
+  color: #1a202c;
+  border-color: #a0aec0;
+}
+
+.btn-modal-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-modal-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background-color: var(--primary);
+  color: #ffffff;
+  border: 1px solid var(--primary);
+  padding: 9px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(184, 27, 20, 0.22);
+  transition: all var(--transition);
+}
+
+.btn-modal-submit:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+  box-shadow: 0 4px 12px rgba(184, 27, 20, 0.32);
+  transform: translateY(-1px);
+}
+
+.btn-modal-submit:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.btn-modal-submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* ================================================================
@@ -946,44 +1373,6 @@
   color: #ffffff;
 }
 
-.btn-pending-absences-action {
-  background-color: #c05621;
-  color: #ffffff;
-  border: none;
-  padding: 6px 14px;
-  border-radius: var(--radius-sm);
-  font-size: 0.82rem;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: background-color var(--transition);
-}
-
-.btn-pending-absences-action:hover {
-  background-color: #9c4221;
-  color: #ffffff;
-}
-
-.btn-confirm-absence {
-  padding: 6px 12px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  background-color: #276749;
-  color: #ffffff;
-  border: none;
-  border-radius: var(--radius-sm);
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  transition: background-color var(--transition);
-}
-
-.btn-confirm-absence:hover {
-  background-color: #1c4532;
-  color: #ffffff;
-}
-
 /* ================================================================
    SECCIÓN QUICK LOGIN (pantalla de login)
    ================================================================ */
@@ -1087,7 +1476,8 @@
   }
 
   .brand-titles span {
-    display: none; /* Solo muestra el nombre de la app */
+    display: none;
+    /* Solo muestra el nombre de la app */
   }
 
   .header-user-actions {

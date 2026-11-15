@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ROLES, CATEGORIAS_AVISOS } from "../../data/mockData";
+import { ROLES, CATEGORIAS_AVISOS, isAutoridad } from "../../data/mockData";
 import { courseService } from "../../services";
 
 export default function CreateNoticeModal({ isOpen, onClose, onSave, currentUser }) {
@@ -7,7 +7,7 @@ export default function CreateNoticeModal({ isOpen, onClose, onSave, currentUser
   const [contenido, setContenido] = useState("");
   const [categoria, setCategoria] = useState(CATEGORIAS_AVISOS[0]);
   const [destinatario, setDestinatario] = useState("");
-  const [prioridad, setPrioridad] = useState("normal");
+  const [prioridad, setPrioridad] = useState("baja");
   const [notificarFamilias, setNotificarFamilias] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -43,24 +43,16 @@ export default function CreateNoticeModal({ isOpen, onClose, onSave, currentUser
           value: div,
         }));
       }
-      case ROLES.REGENTE:
-        return [
-          { label: "Toda la escuela", value: "Todos" },
-          { label: "Turno mañana", value: "Turno Mañana" },
-          { label: "Turno tarde", value: "Turno Tarde" },
-          { label: "Turno noche", value: "Turno Noche" },
-        ];
-      /* [ROL: Profesor] Opciones de destinatario exclusivas de profesor - INACTIVO
-      case ROLES.PROFESOR: {
-        const profCursos = currentUser?.cursosAsignados || [];
-        const profOptions = profCursos.map((c) => ({
-          label: `Alumnos de ${c}`,
-          value: c,
-        }));
-        return profOptions.length > 0 ? profOptions : [todosOption];
-      }
-      */
       default:
+        // Autoridades (regente, jefe de taller, directivo, etc.)
+        if (isAutoridad(currentUser?.rol)) {
+          return [
+            { label: "Toda la escuela", value: "Todos" },
+            { label: "Turno mañana", value: "Turno Mañana" },
+            { label: "Turno tarde", value: "Turno Tarde" },
+            { label: "Turno noche", value: "Turno Noche" },
+          ];
+        }
         return [todosOption, ...allCursosOptions];
     }
   };
@@ -172,7 +164,7 @@ export default function CreateNoticeModal({ isOpen, onClose, onSave, currentUser
             <input
               id="notice-title"
               type="text"
-              placeholder="Ej: Material de estudio para la próxima clase"
+              placeholder="Ej:Ausencia de ...."
               value={titulo}
               onChange={(e) => {
                 setTitulo(e.target.value);
@@ -208,12 +200,11 @@ export default function CreateNoticeModal({ isOpen, onClose, onSave, currentUser
                 onChange={(e) => setPrioridad(e.target.value)}
                 disabled={isSubmitting}
               >
-                <option value="normal">Normal</option>
+                <option value="baja">Baja</option>
                 <option value="media">Media</option>
-                {currentUser?.rol !== ROLES.PRECEPTOR && (
-                  <option value="alta">Alta</option>
-                )}
-              </select>
+                {isAutoridad(currentUser?.rol) && (
+                  <option value="alta">Alta / Urgente</option>
+                )}              </select>
             </div>
           </div>
 
@@ -248,7 +239,7 @@ export default function CreateNoticeModal({ isOpen, onClose, onSave, currentUser
             ></textarea>
           </div>
 
-          {currentUser?.rol !== ROLES.PRECEPTOR && (
+          {isAutoridad(currentUser?.rol) && (
             <div style={{ display: "flex", alignItems: "center", gap: "8px", margin: "14px 0" }}>
               <input
                 id="notice-notificar-familias"
@@ -274,12 +265,10 @@ export default function CreateNoticeModal({ isOpen, onClose, onSave, currentUser
             </button>
             <button type="submit" className="btn-primary-action" disabled={isSubmitting}>
               {isSubmitting ? (
-                <>
-                  <i className="fa-solid fa-spinner fa-spin"></i> Publicando...
+                <> Publicando...
                 </>
               ) : (
-                <>
-                  <i className="fa-solid fa-paper-plane"></i> Publicar
+                <>Publicar
                 </>
               )}
             </button>

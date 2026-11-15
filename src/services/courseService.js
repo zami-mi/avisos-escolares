@@ -7,10 +7,4 @@ export const courseService = {
   async getAll() {
     return request('/cursos');
   },
-
-  /* [ROL: Profesor] Consulta exclusiva de horarios y materias asignadas a un profesor - INACTIVO
-  async getProfesorSchedules(userId) {
-    return request(`/profesor/${userId}/horarios`);
-  },
-  */
 };

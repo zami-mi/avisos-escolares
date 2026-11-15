@@ -1,33 +1,76 @@
 import { getCategoryBadgeClass } from "../../data/mockData";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrashCan } from '@fortawesome/free-solid-svg-icons';
+import { faTrashCan, faClock, faPenToSquare } from '@fortawesome/free-solid-svg-icons';
+
+function isNoticeToday(fechaStr) {
+  if (!fechaStr) return false;
+  const match = String(fechaStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const now = new Date();
+  if (match) {
+    const [, y, m, d] = match.map(Number);
+    return (
+      now.getFullYear() === y &&
+      now.getMonth() + 1 === m &&
+      now.getDate() === d
+    );
+  }
+  const parsed = new Date(fechaStr);
+  if (!isNaN(parsed.getTime())) {
+    return (
+      now.getFullYear() === parsed.getFullYear() &&
+      now.getMonth() === parsed.getMonth() &&
+      now.getDate() === parsed.getDate()
+    );
+  }
+  return false;
+}
 
 export default function NoticeCard({
   notice,
   onSelect,
   onDelete,
+  onEdit,
   canDelete = false,
+  canEdit = false,
   isRead = null,
   onToggleRead = null,
 }) {
-  const prioridadClass = notice.prioridad ? `prioridad-${notice.prioridad}` : "prioridad-normal";
+  const rawPriority = (notice.prioridad || "baja").toLowerCase();
+  const normalizedPriority = rawPriority === "normal" ? "media" : rawPriority;
+  const prioridadClass = `prioridad-${normalizedPriority}`;
 
   const isUrgent =
     notice.prioridad?.toLowerCase() === "alta" ||
     notice.categoria?.toLowerCase() === "urgente";
 
+  const isToday = isNoticeToday(notice.fecha);
+
   return (
-    <div className={`notice-card ${prioridadClass}${isRead === true ? " is-read" : ""}`}>
+    <div className={`notice-card ${prioridadClass}${isToday ? " is-today" : ""}${isRead === true ? " is-read" : ""}`}>
       <div>
         <div className="card-top">
-          {isUrgent ? (
-            <span className="notice-urgent-badge">URGENTE</span>
-          ) : (
-            <span className={`notice-category-badge ${getCategoryBadgeClass(notice.categoria)}`}>
-              {notice.categoria}
-            </span>
-          )}
-          <span className="notice-date">{notice.fecha}</span>
+          <div className="card-badges">
+            {isToday && (
+              <span className="notice-today-badge" title="Publicado durante el día de hoy">
+                Publicado hoy
+              </span>
+            )}
+            {isUrgent ? (
+              <span className="notice-urgent-badge">URGENTE</span>
+            ) : (
+              <span className={`notice-category-badge ${getCategoryBadgeClass(notice.categoria)}`}>
+                {notice.categoria}
+              </span>
+            )}
+          </div>
+          <span className={`notice-date${isToday ? " is-today-date" : ""}`}>
+            {isToday ? (
+              <>Hoy
+              </>
+            ) : (
+              notice.fecha
+            )}
+          </span>
         </div>
 
         <h4 className="notice-title">{notice.titulo}</h4>
@@ -57,6 +100,18 @@ export default function NoticeCard({
             Ver aviso
           </button>
 
+          {canEdit && onEdit && (
+            <button
+              type="button"
+              className="btn-edit-notice"
+              onClick={() => onEdit(notice)}
+              title="Editar aviso"
+              aria-label="Editar aviso"
+            >
+              <FontAwesomeIcon icon={faPenToSquare} />
+            </button>
+          )}
+
           {canDelete && onDelete && (
             <button
               className="btn-delete-notice"
@@ -68,7 +123,7 @@ export default function NoticeCard({
               title="Eliminar aviso"
               aria-label="Eliminar aviso"
             >
-                <FontAwesomeIcon icon={faTrashCan} />
+              <FontAwesomeIcon icon={faTrashCan} />
             </button>
           )}
         </div>

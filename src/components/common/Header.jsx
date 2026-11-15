@@ -20,15 +20,11 @@ export default function Header({ currentUser, onLogout, onOpenChangePassword }) 
             className="btn-change-password"
             onClick={onOpenChangePassword}
             title="Cambiar contraseña"
-          >
-            <i className="fa-solid fa-key" style={{ marginRight: "6px" }}></i>
-            Cambiar contraseña
+          >Cambiar contraseña
           </button>
         )}
 
-        <button className="btn-logout" onClick={onLogout} title="Cerrar sesión">
-          <i className="fa-solid fa-arrow-right-from-bracket" style={{ marginRight: "6px" }}></i>
-          Cerrar Sesión
+        <button className="btn-logout" onClick={onLogout} title="Cerrar sesión">Cerrar Sesión
         </button>
       </div>
     </header>

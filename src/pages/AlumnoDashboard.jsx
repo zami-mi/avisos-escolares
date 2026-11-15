@@ -19,6 +19,7 @@ export default function AlumnoDashboard({
   const myCourseNotices = notices.filter((notice) => {
     const target = (notice.destinatario || "").toLowerCase();
     const course = (currentUser?.curso || "").toLowerCase();
+    const studentTurno = (currentUser?.turno || "").toLowerCase();
 
     const isForStudent =
       !notice.id_curso ||
@@ -26,6 +27,7 @@ export default function AlumnoDashboard({
       target === "alumnos" ||
       target.includes("alumno") ||
       (course && target.includes(course)) ||
+      (studentTurno && target.includes(studentTurno)) ||
       (currentUser?.id_curso && notice.id_curso === currentUser.id_curso);
 
     return isForStudent;
@@ -58,9 +60,9 @@ export default function AlumnoDashboard({
     <div className="dashboard-content">
       <div className="welcome-hero">
         <div className="hero-text">
-          <h1>¡Hola, {currentUser?.nombre}!</h1>
+          <h1>¡Hola, {currentUser?.nombre} {currentUser?.apellido}!</h1>
           <p>
-            Estudiante de <strong>{currentUser?.curso}</strong> ({currentUser?.turno})
+            Estudiante de {currentUser?.curso} - Turno {currentUser?.turno}
           </p>
         </div>
 
@@ -69,8 +71,7 @@ export default function AlumnoDashboard({
             <button
               className="btn-mark-all-read"
               onClick={onMarkAllRead}
-            >
-              <i className="fa-solid fa-check"></i> Marcar como leídas ({unreadCount})
+            >Marcar como leídas ({unreadCount})
             </button>
           </div>
         )}
@@ -83,12 +84,11 @@ export default function AlumnoDashboard({
 
       <div className="stats-row">
         <div className="stat-card">
-          <div className="stat-label">Avisos de mi curso</div>
+          <div className="stat-label">Avisos del curso</div>
           <div className="stat-value">{myCourseNotices.length}</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">
-            <i className="fa-solid fa-bell" style={{ marginRight: "6px" }}></i>
             Notificaciones sin leer
           </div>
           <div
@@ -103,14 +103,12 @@ export default function AlumnoDashboard({
         <button
           className={`tab-btn ${viewFilter === "todos" ? "active" : ""}`}
           onClick={() => setViewFilter("todos")}
-        >
-          <i className="fa-solid fa-list"></i> Todos los avisos ({myCourseNotices.length})
+        >Todos los avisos ({myCourseNotices.length})
         </button>
         <button
           className={`tab-btn ${viewFilter === "noLeidas" ? "active" : ""}`}
           onClick={() => setViewFilter("noLeidas")}
-        >
-          <i className="fa-solid fa-bell"></i>No leídos ({unreadCount})
+        >No leídos ({unreadCount})
         </button>
       </div>
 
@@ -143,11 +141,7 @@ export default function AlumnoDashboard({
               ? "No tenés notificaciones pendientes."
               : "No se encontraron avisos para tu curso."}
           </h3>
-          <p>
-            {viewFilter === "noLeidas"
-              ? "Todas las novedades de tu curso ya fueron marcadas como leídas."
-              : "Probá cambiando los términos de búsqueda o las categorías."}
-          </p>
+          
         </div>
       )}
 

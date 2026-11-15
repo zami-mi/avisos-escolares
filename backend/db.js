@@ -7,22 +7,6 @@ const isLocalHost = (host) => {
     return !host || host === 'localhost' || host === '127.0.0.1' || host === '::1';
 };
 
-/**
- * Configuración dinámica y segura de SSL:
- * 
- * 1. DB_SSL_MODE:
- *    - 'disabled' / 'false': No utiliza SSL (ideal para MySQL local en desarrollo).
- *    - 'required' / 'true': Exige SSL.
- *    - Por defecto: Si DB_HOST es localhost/127.0.0.1, SSL se desactiva. Si es un host remoto (ej. Render/Aiven/AWS), se activa.
- * 
- * 2. Certificado CA:
- *    - DB_CA_CERT: Certificado CA provisto directamente como string (útil en variables de entorno de Render).
- *    - DB_CA_PATH: Ruta relativa o absoluta a archivo PEM (por defecto 'certs/ca.pem').
- * 
- * 3. Validación de cadena (rejectUnauthorized):
- *    - Por defecto 'true' cuando se suministra certificado CA.
- *    - Controlable vía DB_SSL_REJECT_UNAUTHORIZED ('true'/'false').
- */
 const configureSsl = () => {
     const rawSslMode = (process.env.DB_SSL_MODE || '').trim().toLowerCase();
     const host = process.env.DB_HOST || 'localhost';
@@ -98,10 +82,8 @@ pool.getConnection((err, connection) => {
     }
     console.log(`[DB] Conectado correctamente a MySQL (pool) [SSL: ${sslOptions ? 'activo' : 'inactivo'}]`);
     connection.release();
-
     asegurarEstructuraTablas();
     asegurarColumnaAnio();
-    corregirAsignacionesHorarios();
 });
 
 function asegurarColumnaAnio() {
@@ -134,10 +116,11 @@ function asegurarColumnaAnio() {
 
 function asegurarEstructuraTablas() {
     const columnas = [
-        { tabla: 'avisos', columna: 'prioridad', definicion: "VARCHAR(20) DEFAULT 'normal'" },
-        { tabla: 'ausencias', columna: 'estado', definicion: "VARCHAR(20) DEFAULT 'pendiente'" },
-        { tabla: 'ausencias', columna: 'confirmado_por', definicion: "VARCHAR(100) NULL" },
-        { tabla: 'ausencias', columna: 'fecha_confirmacion', definicion: "DATE NULL" }
+        {
+            tabla: 'avisos',
+            columna: 'prioridad',
+            definicion: "VARCHAR(20) DEFAULT 'baja'"
+        }
     ];
 
     columnas.forEach(({ tabla, columna, definicion }) => {
@@ -148,35 +131,35 @@ function asegurarEstructuraTablas() {
               AND TABLE_NAME = ?
               AND COLUMN_NAME = ?
         `;
+
         pool.query(checkSql, [tabla, columna], (err, rows) => {
             if (err) {
-                console.error(`[DB] Error verificando columna ${tabla}.${columna}:`, err.message);
+                console.error(
+                    `[DB] Error verificando columna ${tabla}.${columna}:`,
+                    err.message
+                );
                 return;
             }
+
             if (rows && rows[0].total === 0) {
-                const alterSql = `ALTER TABLE \`${tabla}\` ADD COLUMN \`${columna}\` ${definicion}`;
+                const alterSql = `
+                    ALTER TABLE \`${tabla}\`
+                    ADD COLUMN \`${columna}\` ${definicion}
+                `;
+
                 pool.query(alterSql, (alterErr) => {
                     if (alterErr) {
-                        console.error(`[DB] Error al agregar columna ${tabla}.${columna}:`, alterErr.message);
+                        console.error(
+                            `[DB] Error al agregar columna ${tabla}.${columna}:`,
+                            alterErr.message
+                        );
                     } else {
-                        console.log(`[DB] Columna asegurada: ${tabla}.${columna}`);
+                        console.log(
+                            `[DB] Columna asegurada: ${tabla}.${columna}`
+                        );
                     }
                 });
             }
-        });
-    });
-}
-
-function corregirAsignacionesHorarios() {
-    const updates = [
-        "UPDATE horarios SET id_profesor = 2 WHERE id_horario = 1 AND id_profesor != 2",
-        "UPDATE horarios SET id_profesor = 1 WHERE id_horario = 2 AND id_profesor != 1",
-        "UPDATE horarios SET id_profesor = 4 WHERE id_horario = 3 AND id_profesor != 4",
-        "UPDATE horarios SET id_profesor = 3 WHERE id_horario = 4 AND id_profesor != 3"
-    ];
-    updates.forEach((sql) => {
-        pool.query(sql, (err) => {
-            if (err) console.warn('[DB] corregirAsignacionesHorarios:', err.message);
         });
     });
 }

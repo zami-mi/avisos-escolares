@@ -11,20 +11,12 @@
  * - getNotices(): Promise<Notice[]>
  * - getNoticesByAuthor(userId): Promise<Notice[]>
  * - createNotice(noticeData): Promise<Notice>
+ * - updateNotice(noticeId, noticeData): Promise<Notice>
  * - deleteNotice(noticeId): Promise<boolean>
- * - getAbsences(filters): Promise<Absence[]>
- * - getAbsencesByPreceptor(userId): Promise<Absence[]>
- * - getAbsencesSummary(): Promise<AbsenceSummary>
- * - confirmAbsence(absenceId, confirmData): Promise<{ ausencia: Absence, aviso: Notice }>
  * - getReadNotifications(userId): Promise<number[]>
  * - toggleNotification(userId, noticeId): Promise<{ id_aviso: number, leido: boolean }>
  * - markAllNotifications(userId, noticeIds): Promise<number[]>
  * - updatePassword(userId, contrasenaActual, nuevaContrasena): Promise<{ mensaje: string }>
- *
- * MÉTODOS INACTIVOS (conservados mediante comentarios para rol Profesor):
- * - [ROL: Profesor] getAbsencesByProfesor(userId): Promise<Absence[]>
- * - [ROL: Profesor] createAbsence(absenceData): Promise<Absence>
- * - [ROL: Profesor] getTeacherSchedules(userId): Promise<Schedule[]>
  */
 
 module.exports = {};

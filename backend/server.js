@@ -13,10 +13,6 @@ app.use(express.json());
 const JWT_SECRET = process.env.JWT_SECRET || 'red35_jwt_school_security_secret_key_default';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '8h';
 
-/**
- * Middleware para autenticar tokens JWT.
- * Extrae y valida el token Bearer del encabezado Authorization.
- */
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -34,10 +30,6 @@ function authenticateToken(req, res, next) {
   });
 }
 
-/**
- * Middleware para autorización basada en roles (RBAC).
- * Extrae el rol directamente del token verificado por el backend.
- */
 function requireRoles(...allowedRoles) {
   return (req, res, next) => {
     if (!req.user || !allowedRoles.includes(req.user.rol)) {
@@ -93,11 +85,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-/**
- * Endpoint protegido para cambiar contraseña.
- * Exclusivo para roles activos (Alumno, Preceptor, Regente).
- * Extrae la identidad directamente del token JWT verificado (previene ataques de cambio cruzado).
- */
 app.post('/api/usuarios/cambiar-contrasena', authenticateToken, requireRoles('alumno', 'preceptor', 'regente'), async (req, res) => {
   const { contrasenaActual, nuevaContrasena, confirmarContrasena } = req.body;
   const id_usuario = req.user.id_usuario;
@@ -150,9 +137,11 @@ app.get('/api/avisos/autor/:id_usuario', async (req, res) => {
   }
 });
 
-// Roles autorizados activos: preceptor y regente.
-// [ROLES: Profesor y Secretaria] Bloqueados mediante comentarios para publicación y eliminación de avisos.
-app.post('/api/avisos', authenticateToken, requireRoles(/* 'profesor', [ROL: Profesor] */ 'preceptor', 'regente' /* , 'secretaria' [ROL: Secretaria] */), async (req, res) => {
+// Roles autorizados activos: preceptor, regente, jefe de taller, directivo y otras autoridades.
+const ROLES_AUTORIDAD_BACKEND = ['regente', 'jefe_taller', 'jefe de taller', 'directivo', 'director', 'autoridad'];
+const isAutoridadBackend = (rol) => ROLES_AUTORIDAD_BACKEND.includes((rol || '').toLowerCase());
+
+app.post('/api/avisos', authenticateToken, requireRoles('preceptor', 'regente', 'jefe_taller', 'jefe de taller', 'directivo', 'director', 'autoridad'), async (req, res) => {
   const { titulo, contenido, categoria, destinatario, prioridad, notificar_familias } = req.body;
   // Identidad garantizada mediante el token verificado
   const id_usuario = req.user.id_usuario;
@@ -162,13 +151,17 @@ app.post('/api/avisos', authenticateToken, requireRoles(/* 'profesor', [ROL: Pro
     return res.status(400).json({ error: 'Título y contenido son obligatorios' });
   }
 
+  const PRIORIDADES_VALIDAS = ['baja', 'media', 'alta', 'normal'];
+  const prioridadSolicitada = (prioridad || 'baja').toLowerCase();
+  if (!PRIORIDADES_VALIDAS.includes(prioridadSolicitada)) {
+    return res.status(400).json({ error: 'Prioridad inválida. Las opciones válidas son: Baja, Media o Alta' });
+  }
+
   // Validaciones exclusivas para el rol preceptor
   if (rolUsuario === 'preceptor') {
-    // a) Prioridad permitida: solo normal o media
-    const PRIORIDADES_PERMITIDAS_PRECEPTOR = ['normal', 'media'];
-    const prioridadSolicitada = (prioridad || 'normal').toLowerCase();
-    if (!PRIORIDADES_PERMITIDAS_PRECEPTOR.includes(prioridadSolicitada)) {
-      return res.status(403).json({ error: 'El preceptor solo puede usar prioridad Normal o Media' });
+    // a) Prioridad permitida: solo baja o media
+    if (prioridadSolicitada === 'alta') {
+      return res.status(403).json({ error: 'El preceptor solo puede usar prioridad Baja o Media' });
     }
 
     // b) Verificar que el curso seleccionado esté asignado al preceptor
@@ -193,11 +186,11 @@ app.post('/api/avisos', authenticateToken, requireRoles(/* 'profesor', [ROL: Pro
     }
   }
 
-  // Validaciones exclusivas para el rol regente
-  if (rolUsuario === 'regente') {
-    const DESTINATARIOS_PERMITIDOS_REGENTE = ['Todos', 'Turno Mañana', 'Turno Tarde', 'Turno Noche'];
-    if (!destinatario || !DESTINATARIOS_PERMITIDOS_REGENTE.includes(destinatario)) {
-      return res.status(400).json({ error: 'Destinatario inválido para el regente. Las opciones válidas son: Toda la escuela, Turno Mañana, Turno Tarde o Turno Noche' });
+  // Validaciones exclusivas para el rol regente y otras autoridades
+  if (isAutoridadBackend(rolUsuario)) {
+    const DESTINATARIOS_PERMITIDOS_AUTORIDAD = ['Todos', 'Turno Mañana', 'Turno Tarde', 'Turno Noche'];
+    if (!destinatario || !DESTINATARIOS_PERMITIDOS_AUTORIDAD.includes(destinatario)) {
+      return res.status(400).json({ error: 'Destinatario inválido para autoridad. Las opciones válidas son: Toda la escuela, Turno Mañana, Turno Tarde o Turno Noche' });
     }
   }
 
@@ -219,11 +212,11 @@ app.post('/api/avisos', authenticateToken, requireRoles(/* 'profesor', [ROL: Pro
   }
 });
 
-app.delete('/api/avisos/:id_aviso', authenticateToken, requireRoles('preceptor', 'regente' /* , 'profesor', 'secretaria' [ROLES: Profesor y Secretaria] */), async (req, res) => {
+app.delete('/api/avisos/:id_aviso', authenticateToken, requireRoles('preceptor', 'regente', 'jefe_taller', 'jefe de taller', 'directivo', 'director', 'autoridad'), async (req, res) => {
   const { id_aviso } = req.params;
   try {
-    // Si no es regente, validar que sea el autor original del aviso
-    if (req.user.rol !== 'regente') {
+    // Si no es una autoridad, validar que sea el autor original del aviso
+    if (!isAutoridadBackend(req.user.rol)) {
       const avisosAutor = await dataAdapter.getNoticesByAuthor(req.user.id_usuario);
       const esAutor = avisosAutor.some((a) => Number(a.id) === Number(id_aviso));
       if (!esAutor) {
@@ -239,116 +232,50 @@ app.delete('/api/avisos/:id_aviso', authenticateToken, requireRoles('preceptor',
   }
 });
 
-app.get('/api/ausencias', async (req, res) => {
-  const { estado, curso } = req.query;
-  try {
-    const ausencias = await dataAdapter.getAbsences({ estado, curso });
-    res.json(ausencias);
-  } catch (error) {
-    console.error('Error al consultar ausencias:', error);
-    res.status(500).json({ error: 'Error al consultar ausencias' });
-  }
-});
+app.put('/api/avisos/:id_aviso', authenticateToken, requireRoles('preceptor', 'regente', 'jefe_taller', 'jefe de taller', 'directivo', 'director', 'autoridad'), async (req, res) => {
+  const { id_aviso } = req.params;
+  const { titulo, contenido, categoria, destinatario, prioridad } = req.body;
 
-app.get('/api/ausencias/resumen', async (req, res) => {
-  try {
-    const resumen = await dataAdapter.getAbsencesSummary();
-    res.json(resumen);
-  } catch (error) {
-    console.error('Error al obtener resumen de ausencias:', error);
-    res.status(500).json({ error: 'Error al obtener resumen de ausencias' });
+  if (!titulo || !titulo.trim() || !contenido || !contenido.trim()) {
+    return res.status(400).json({ error: 'Título y contenido son obligatorios' });
   }
-});
 
-/* [ROL: Profesor] Endpoint exclusivo para consultar ausencias de un profesor específico - INACTIVO
-app.get(['/api/ausencias/profesor/:id_usuario', '/api/ausencias/:id_usuario'], async (req, res) => {
-  const { id_usuario } = req.params;
-  try {
-    const ausencias = await dataAdapter.getAbsencesByProfesor(id_usuario);
-    res.json(ausencias);
-  } catch (error) {
-    console.error('Error al consultar ausencias del profesor:', error);
-    res.status(500).json({ error: 'Error al consultar ausencias del profesor' });
-  }
-});
-*/
-
-app.get('/api/ausencias/preceptor/:id_usuario', async (req, res) => {
-  const { id_usuario } = req.params;
-  try {
-    const ausencias = await dataAdapter.getAbsencesByPreceptor(id_usuario);
-    res.json(ausencias);
-  } catch (error) {
-    console.error('Error al consultar ausencias para preceptor:', error);
-    res.status(500).json({ error: 'Error al consultar ausencias para preceptor' });
-  }
-});
-
-/* [ROL: Profesor] Endpoint exclusivo para que profesores registren ausencias - INACTIVO
-app.post('/api/ausencias', authenticateToken, requireRoles('profesor'), async (req, res) => {
-  const { id_horario, fecha, motivo, notificar_familias } = req.body;
-  if (!id_horario || !fecha) {
-    return res.status(400).json({ error: 'Faltan parámetros obligatorios (id_horario, fecha)' });
+  if (prioridad) {
+    const PRIORIDADES_VALIDAS = ['baja', 'media', 'alta', 'normal'];
+    const prioridadNorm = prioridad.toLowerCase();
+    if (!PRIORIDADES_VALIDAS.includes(prioridadNorm)) {
+      return res.status(400).json({ error: 'Prioridad inválida. Las opciones válidas son: Baja, Media o Alta' });
+    }
   }
 
   try {
-    const nuevaAusencia = await dataAdapter.createAbsence({
-      id_horario,
-      fecha,
-      motivo,
-      notificar_familias
-    });
-    res.json(nuevaAusencia);
-  } catch (error) {
-    console.error('Error al registrar ausencia:', error);
-    res.status(500).json({ error: 'Error al registrar la ausencia en la base de datos' });
-  }
-});
-*/
+    // Las autoridades pueden editar cualquier aviso; el preceptor solo los suyos
+    if (!isAutoridadBackend(req.user.rol)) {
+      const avisosAutor = await dataAdapter.getNoticesByAuthor(req.user.id_usuario);
+      const esAutor = avisosAutor.some((a) => Number(a.id) === Number(id_aviso));
+      if (!esAutor) {
+        return res.status(403).json({ error: 'Solo tenés permisos para editar tus propios avisos' });
+      }
 
-app.post('/api/ausencias/:id_ausencia/confirmar', authenticateToken, requireRoles('preceptor', 'regente'), async (req, res) => {
-  const { id_ausencia } = req.params;
-  const id_usuario = req.user.id_usuario;
-  const { confirmado_por } = req.body;
-
-  try {
-    const user = await dataAdapter.getUserById(id_usuario);
-    const resultado = await dataAdapter.confirmAbsence(id_ausencia, {
-      id_usuario,
-      confirmado_por: confirmado_por || `${user.nombre} ${user.apellido || ''}`.trim()
-    });
-
-    if (!resultado) {
-      return res.status(404).json({ error: 'Ausencia no encontrada' });
+      if (prioridad && prioridad.toLowerCase() === 'alta') {
+        return res.status(403).json({ error: 'El preceptor solo puede usar prioridad Baja o Media' });
+      }
     }
 
-    res.json({
-      mensaje: 'Ausencia confirmada y aviso generado exitosamente',
-      ...resultado
+    const avisoActualizado = await dataAdapter.updateNotice(id_aviso, {
+      titulo: titulo.trim(),
+      contenido: contenido.trim(),
+      categoria,
+      destinatario,
+      prioridad
     });
+
+    res.json(avisoActualizado);
   } catch (error) {
-    console.error('Error al confirmar ausencia:', error);
-    res.status(500).json({ error: 'Error al confirmar ausencia en la base de datos' });
+    console.error('Error al editar aviso:', error);
+    res.status(500).json({ error: 'Error al actualizar el aviso en la base de datos' });
   }
 });
-
-/* [ROL: Profesor] Endpoint exclusivo para consultar horarios de un profesor - INACTIVO
-app.get('/api/profesor/:id_usuario/horarios', authenticateToken, async (req, res) => {
-  const { id_usuario } = req.params;
-  // Solo el propio docente o personal administrativo/directivo puede consultar sus horarios
-  if (req.user.rol === 'profesor' && req.user.id_usuario !== Number(id_usuario)) {
-    return res.status(403).json({ error: 'Acceso denegado: No puedes consultar horarios de otro docente' });
-  }
-
-  try {
-    const horarios = await dataAdapter.getTeacherSchedules(id_usuario);
-    res.json(horarios);
-  } catch (error) {
-    console.error('Error al consultar horarios:', error);
-    res.status(500).json({ error: 'Error al consultar horarios' });
-  }
-});
-*/
 
 app.get('/api/notificaciones/:id_usuario', async (req, res) => {
   const { id_usuario } = req.params;

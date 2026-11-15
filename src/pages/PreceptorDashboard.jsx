@@ -3,12 +3,14 @@ import NoticeCard from "../components/notices/NoticeCard";
 import NoticeFilters from "../components/notices/NoticeFilters";
 import NoticeDetailModal from "../components/common/NoticeDetailModal";
 import CreateNoticeModal from "../components/notices/CreateNoticeModal";
+import EditNoticeModal from "../components/notices/EditNoticeModal";
 import NoticeTimeline from "../components/common/NoticeTimeline";
 
 export default function PreceptorDashboard({
   currentUser,
   notices = [],
   onAddNotice,
+  onEditNotice,
   onDeleteNotice,
 }) {
   const [activeTab, setActiveTab] = useState("avisos");
@@ -16,8 +18,8 @@ export default function PreceptorDashboard({
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [selectedNotice, setSelectedNotice] = useState(null);
   const [isCreateNoticeOpen, setIsCreateNoticeOpen] = useState(false);
+  const [editingNotice, setEditingNotice] = useState(null);
 
-  // Divisiones reales asignadas al preceptor según la base de datos
   const myDivisions = currentUser?.divisiones || [];
 
   // Avisos de sus divisiones
@@ -56,8 +58,9 @@ export default function PreceptorDashboard({
     <div className="dashboard-content">
       <div className="welcome-hero">
         <div className="hero-text">
-          <h1>Panel de preceptoría - {currentUser?.nombre}</h1>
+          <h1>¡Hola, {currentUser?.nombre} {currentUser?.apellido}!</h1>
           <p>
+            Panel de preceptoría -
             Turno: <strong>{currentUser?.turno}</strong> • Divisiones a cargo:{" "}
             <strong>{myDivisions.join(", ")}</strong>
           </p>
@@ -66,8 +69,7 @@ export default function PreceptorDashboard({
           <button
             className="btn-primary-action"
             onClick={() => setIsCreateNoticeOpen(true)}
-          >
-            <i className="fa-solid fa-plus"></i> Crear aviso
+          >Crear aviso
           </button>
         </div>
       </div>
@@ -94,14 +96,12 @@ export default function PreceptorDashboard({
         <button
           className={`tab-btn ${activeTab === "avisos" ? "active" : ""}`}
           onClick={() => setActiveTab("avisos")}
-        >
-          <i className="fa-regular fa-bell"></i> Avisos de mis cursos ({divisionNotices.length})
+        >Avisos escolares ({divisionNotices.length})
         </button>
         <button
           className={`tab-btn ${activeTab === "misAvisos" ? "active" : ""}`}
           onClick={() => setActiveTab("misAvisos")}
-        >
-          <i className="fa-solid fa-pen-to-square"></i> Mis avisos ({myNotices.length})
+        >Mis avisos ({myNotices.length})
         </button>
       </div>
 
@@ -116,19 +116,24 @@ export default function PreceptorDashboard({
 
           {filteredNotices.length > 0 ? (
             <div className="notices-grid">
-              {filteredNotices.map((notice) => (
-                <NoticeCard
-                  key={notice.id}
-                  notice={notice}
-                  onSelect={setSelectedNotice}
-                  onDelete={onDeleteNotice}
-                  canDelete={
-                    notice.rolAutor === "preceptor" ||
-                    (currentUser?.id_usuario && notice.id_usuario === currentUser.id_usuario) ||
-                    (currentUser?.nombre && notice.autor?.toLowerCase().includes(currentUser.nombre.toLowerCase()))
-                  }
-                />
-              ))}
+              {filteredNotices.map((notice) => {
+                const isAuthor =
+                  notice.rolAutor === "preceptor" ||
+                  (currentUser?.id_usuario && notice.id_usuario === currentUser.id_usuario) ||
+                  (currentUser?.nombre && notice.autor?.toLowerCase().includes(currentUser.nombre.toLowerCase()));
+
+                return (
+                  <NoticeCard
+                    key={notice.id}
+                    notice={notice}
+                    onSelect={setSelectedNotice}
+                    onDelete={onDeleteNotice}
+                    onEdit={setEditingNotice}
+                    canDelete={isAuthor}
+                    canEdit={isAuthor}
+                  />
+                );
+              })}
             </div>
           ) : (
             <div className="empty-state">
@@ -153,7 +158,9 @@ export default function PreceptorDashboard({
                   notice={notice}
                   onSelect={setSelectedNotice}
                   onDelete={onDeleteNotice}
+                  onEdit={setEditingNotice}
                   canDelete={true}
+                  canEdit={true}
                 />
               ))}
             </div>
@@ -176,6 +183,14 @@ export default function PreceptorDashboard({
         isOpen={isCreateNoticeOpen}
         onClose={() => setIsCreateNoticeOpen(false)}
         onSave={onAddNotice}
+        currentUser={currentUser}
+      />
+
+      <EditNoticeModal
+        isOpen={!!editingNotice}
+        notice={editingNotice}
+        onClose={() => setEditingNotice(null)}
+        onSave={onEditNotice}
         currentUser={currentUser}
       />
     </div>

@@ -1,12 +1,46 @@
-
-
 export const ROLES = {
   ALUMNO: "alumno",
-  PROFESOR: "profesor",
   PRECEPTOR: "preceptor",
   REGENTE: "regente",
-  SECRETARIA: "secretaria",
+  JEFE_TALLER: "jefe_taller",
+  AUTORIDAD: "autoridad",
+  DIRECTIVO: "directivo",
 };
+
+export const ROLES_AUTORIDAD = [
+  "regente",
+  "jefe_taller",
+  "jefe de taller",
+  "autoridad",
+  "directivo",
+  "director",
+];
+
+export function isAutoridad(rol = "") {
+  return ROLES_AUTORIDAD.includes(String(rol).toLowerCase().trim());
+}
+
+export function formatRoleLabel(rol = "") {
+  const r = String(rol).toLowerCase().trim();
+  switch (r) {
+    case "alumno":
+      return "Alumno";
+    case "preceptor":
+      return "Preceptor";
+    case "regente":
+      return "Regente";
+    case "jefe_taller":
+    case "jefe de taller":
+      return "Jefe de Taller";
+    case "directivo":
+    case "director":
+      return "Directivo";
+    case "autoridad":
+      return "Autoridad";
+    default:
+      return rol ? rol.charAt(0).toUpperCase() + rol.slice(1) : "Usuario";
+  }
+}
 
 export const CATEGORIAS_AVISOS = [
   "Ausencias y Horarios",

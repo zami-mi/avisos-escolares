@@ -28,6 +28,18 @@ export const noticeService = {
   },
 
   /**
+   * Actualiza un aviso escolar existente en la base de datos.
+   * @param {number} noticeId
+   * @param {object} noticeData { titulo, contenido, categoria, destinatario, prioridad }
+   */
+  async update(noticeId, noticeData) {
+    return request(`/avisos/${noticeId}`, {
+      method: 'PUT',
+      body: JSON.stringify(noticeData),
+    });
+  },
+
+  /**
    * Elimina un aviso existente.
    * @param {number} noticeId
    */

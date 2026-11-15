@@ -103,35 +103,6 @@ const mysqlAdapter = {
     // Eliminar la contraseña del objeto usuario para proteger los datos
     delete usuario.contrasena;
 
-    /* [ROL: Profesor] Consulta de materias y cursos asignados al profesor al autenticarse - INACTIVO
-    if (usuario.rol === 'profesor') {
-      const profRows = await queryAsync('SELECT id_profesor FROM profesores WHERE id_usuario = ?', [usuario.id_usuario]);
-      if (profRows.length > 0) {
-        const profIds = profRows.map(r => r.id_profesor);
-        usuario.id_profesor = profRows[0].id_profesor;
-
-        const horSql =
-          'SELECT DISTINCT m.nombre AS materia ' +
-          'FROM horarios h ' +
-          'JOIN materias m ON h.id_materia = m.id_materia ' +
-          'WHERE h.id_profesor IN (?)';
-        const horRows = await queryAsync(horSql, [profIds]);
-        usuario.materias = horRows.map(r => r.materia);
-
-        const curSql =
-          'SELECT DISTINCT CONCAT(c.anio, \'° \', c.division) AS curso ' +
-          'FROM horarios h ' +
-          'JOIN cursos c ON h.id_curso = c.id_curso ' +
-          'WHERE h.id_profesor IN (?)';
-        const curRows = await queryAsync(curSql, [profIds]);
-        usuario.cursosAsignados = curRows.map(r => r.curso);
-      } else {
-        usuario.materias = [];
-        usuario.cursosAsignados = [];
-      }
-    }
-    */
-
     if (usuario.rol === 'preceptor') {
       const precSql =
         'SELECT ' +
@@ -196,17 +167,22 @@ const mysqlAdapter = {
       '  a.tipo AS categoria, ' +
       '  a.prioridad, ' +
       '  a.notificar_familias, ' +
-      '  ac.id_curso, ' +
+      '  MAX(ac.id_curso) AS id_curso, ' +
       '  CASE ' +
-      '    WHEN ac.id_curso IS NULL THEN \'Todos\' ' +
-      '    ELSE CONCAT(c.anio, \'° \', c.division) ' +
+      '    WHEN COUNT(ac.id_curso) = 0 THEN \'Todos\' ' +
+      '    WHEN COUNT(DISTINCT ac.id_curso) = (SELECT COUNT(*) FROM cursos) THEN \'Todos\' ' +
+      '    WHEN COUNT(DISTINCT c.turno) = 1 AND COUNT(DISTINCT ac.id_curso) = (SELECT COUNT(*) FROM cursos WHERE turno = MAX(c.turno)) THEN CONCAT(\'Turno \', MAX(c.turno)) ' +
+      '    WHEN COUNT(DISTINCT ac.id_curso) = 1 THEN MAX(CONCAT(c.anio, \'° \', c.division)) ' +
+      '    ELSE GROUP_CONCAT(DISTINCT CONCAT(c.anio, \'° \', c.division) ORDER BY c.anio, c.division SEPARATOR \', \') ' +
       '  END AS destinatario, ' +
       '  CONCAT(u.nombre, \' \', u.apellido) AS autor, ' +
-      '  u.rol AS rolAutor ' +
+      '  u.rol AS rolAutor, ' +
+      '  a.id_usuario ' +
       'FROM avisos a ' +
       'LEFT JOIN avisos_cursos ac ON a.id_aviso = ac.id_aviso ' +
       'LEFT JOIN cursos c ON ac.id_curso = c.id_curso ' +
       'LEFT JOIN usuarios u ON a.id_usuario = u.id_usuario ' +
+      'GROUP BY a.id_aviso ' +
       'ORDER BY a.fecha_publicacion DESC, a.id_aviso DESC';
     return queryAsync(sql);
   },
@@ -221,18 +197,23 @@ const mysqlAdapter = {
       '  a.tipo AS categoria, ' +
       '  a.prioridad, ' +
       '  a.notificar_familias, ' +
-      '  ac.id_curso, ' +
+      '  MAX(ac.id_curso) AS id_curso, ' +
       '  CASE ' +
-      '    WHEN ac.id_curso IS NULL THEN \'Todos\' ' +
-      '    ELSE CONCAT(c.anio, \'° \', c.division) ' +
+      '    WHEN COUNT(ac.id_curso) = 0 THEN \'Todos\' ' +
+      '    WHEN COUNT(DISTINCT ac.id_curso) = (SELECT COUNT(*) FROM cursos) THEN \'Todos\' ' +
+      '    WHEN COUNT(DISTINCT c.turno) = 1 AND COUNT(DISTINCT ac.id_curso) = (SELECT COUNT(*) FROM cursos WHERE turno = MAX(c.turno)) THEN CONCAT(\'Turno \', MAX(c.turno)) ' +
+      '    WHEN COUNT(DISTINCT ac.id_curso) = 1 THEN MAX(CONCAT(c.anio, \'° \', c.division)) ' +
+      '    ELSE GROUP_CONCAT(DISTINCT CONCAT(c.anio, \'° \', c.division) ORDER BY c.anio, c.division SEPARATOR \', \') ' +
       '  END AS destinatario, ' +
       '  CONCAT(u.nombre, \' \', u.apellido) AS autor, ' +
-      '  u.rol AS rolAutor ' +
+      '  u.rol AS rolAutor, ' +
+      '  a.id_usuario ' +
       'FROM avisos a ' +
       'LEFT JOIN avisos_cursos ac ON a.id_aviso = ac.id_aviso ' +
       'LEFT JOIN cursos c ON ac.id_curso = c.id_curso ' +
       'LEFT JOIN usuarios u ON a.id_usuario = u.id_usuario ' +
       'WHERE a.id_usuario = ? ' +
+      'GROUP BY a.id_aviso ' +
       'ORDER BY a.fecha_publicacion DESC, a.id_aviso DESC';
     return queryAsync(sql, [userId]);
   },
@@ -301,7 +282,7 @@ const mysqlAdapter = {
   async createNotice({ titulo, contenido, categoria, destinatario, prioridad, id_usuario, notificar_familias }) {
     const resultadoTransaccion = await withTransaction(async (qTx) => {
       const tipoAviso = categoria || 'Institucional';
-      const prioridadAviso = prioridad || 'normal';
+      const prioridadAviso = prioridad || 'baja';
       const notificarFamiliasVal = notificar_familias ? 1 : 0;
 
       const insertSql =
@@ -321,14 +302,25 @@ const mysqlAdapter = {
       // 1. Obtener alumnos destinatarios según los cursos del aviso
       let alumnosRows = [];
       if (esTodos) {
-        alumnosRows = await qTx('SELECT id_alumno, id_usuario, id_curso FROM alumnos');
+        const sqlAlumnos =
+          'SELECT al.id_alumno, al.id_usuario, al.id_curso, u.email, u.nombre, u.apellido ' +
+          'FROM alumnos al ' +
+          'JOIN usuarios u ON al.id_usuario = u.id_usuario ' +
+          'WHERE u.rol = "alumno"';
+        alumnosRows = await qTx(sqlAlumnos);
       } else if (cursos.length > 0) {
         const cursosIds = cursos.map(c => c.id_curso);
-        alumnosRows = await qTx('SELECT id_alumno, id_usuario, id_curso FROM alumnos WHERE id_curso IN (?)', [cursosIds]);
+        const sqlAlumnos =
+          'SELECT al.id_alumno, al.id_usuario, al.id_curso, u.email, u.nombre, u.apellido ' +
+          'FROM alumnos al ' +
+          'JOIN usuarios u ON al.id_usuario = u.id_usuario ' +
+          'WHERE u.rol = "alumno" AND al.id_curso IN (?)';
+        alumnosRows = await qTx(sqlAlumnos, [cursosIds]);
       }
 
       const alumnosIdsUsuarios = [];
       const alumnosIdsAlumnos = [];
+      const alumnosParaEmail = [];
 
       alumnosRows.forEach(a => {
         if (a.id_usuario && !alumnosIdsUsuarios.includes(a.id_usuario)) {
@@ -336,6 +328,13 @@ const mysqlAdapter = {
         }
         if (a.id_alumno && !alumnosIdsAlumnos.includes(a.id_alumno)) {
           alumnosIdsAlumnos.push(a.id_alumno);
+        }
+        if (a.email && typeof a.email === 'string' && a.email.trim()) {
+          alumnosParaEmail.push({
+            email: a.email.trim(),
+            nombre: a.nombre,
+            apellido: a.apellido,
+          });
         }
       });
 
@@ -375,10 +374,13 @@ const mysqlAdapter = {
         '  a.tipo AS categoria, ' +
         '  a.prioridad, ' +
         '  a.notificar_familias, ' +
-        '  ac.id_curso, ' +
+        '  MAX(ac.id_curso) AS id_curso, ' +
         '  CASE ' +
-        '    WHEN ac.id_curso IS NULL THEN \'Todos\' ' +
-        '    ELSE CONCAT(c.anio, \'° \', c.division) ' +
+        '    WHEN COUNT(ac.id_curso) = 0 THEN \'Todos\' ' +
+        '    WHEN COUNT(DISTINCT ac.id_curso) = (SELECT COUNT(*) FROM cursos) THEN \'Todos\' ' +
+        '    WHEN COUNT(DISTINCT c.turno) = 1 AND COUNT(DISTINCT ac.id_curso) = (SELECT COUNT(*) FROM cursos WHERE turno = MAX(c.turno)) THEN CONCAT(\'Turno \', MAX(c.turno)) ' +
+        '    WHEN COUNT(DISTINCT ac.id_curso) = 1 THEN MAX(CONCAT(c.anio, \'° \', c.division)) ' +
+        '    ELSE GROUP_CONCAT(DISTINCT CONCAT(c.anio, \'° \', c.division) ORDER BY c.anio, c.division SEPARATOR \', \') ' +
         '  END AS destinatario, ' +
         '  CONCAT(u.nombre, \' \', u.apellido) AS autor, ' +
         '  u.rol AS rolAutor ' +
@@ -387,6 +389,7 @@ const mysqlAdapter = {
         'LEFT JOIN cursos c ON ac.id_curso = c.id_curso ' +
         'LEFT JOIN usuarios u ON a.id_usuario = u.id_usuario ' +
         'WHERE a.id_aviso = ? ' +
+        'GROUP BY a.id_aviso ' +
         'LIMIT 1';
       const noticeRows = await qTx(getAvisoSql, [id_aviso]);
       const avisoCreado = noticeRows[0] || {
@@ -396,25 +399,48 @@ const mysqlAdapter = {
         categoria: tipoAviso,
         prioridad: prioridadAviso,
         notificar_familias: notificarFamiliasVal,
-        destinatario: esTodos ? 'Todos' : (cursos[0]?.curso_nombre || 'Varios cursos')
+        destinatario: destinatario || (esTodos ? 'Todos' : (cursos[0]?.curso_nombre || 'Varios cursos'))
       };
+
+      if (destinatario && (!avisoCreado.destinatario || avisoCreado.destinatario === 'Todos')) {
+        avisoCreado.destinatario = destinatario;
+      }
 
       avisoCreado.notificaciones_alumnos = alumnosIdsUsuarios.length;
 
-      return { avisoCreado, familiasParaEmail, notificarFamiliasVal };
+      return { avisoCreado, familiasParaEmail, notificarFamiliasVal, alumnosParaEmail };
     });
 
-    const { avisoCreado, familiasParaEmail, notificarFamiliasVal } = resultadoTransaccion;
+    const { avisoCreado, familiasParaEmail, notificarFamiliasVal, alumnosParaEmail } = resultadoTransaccion;
 
-    // 5. Envío exclusivo por correo electrónico a las familias (sin duplicación y con gestión de errores individual)
+    // 5. Envío automático por correo electrónico a los alumnos destinatarios (en segundo plano)
+    if (alumnosParaEmail && alumnosParaEmail.length > 0) {
+      emailService
+        .enviarAvisoAAlumnos({
+          aviso: avisoCreado,
+          destinatarios: alumnosParaEmail,
+        })
+        .then((resAlumnos) => {
+          console.log(`[EMAIL ALUMNOS] Aviso #${avisoCreado.id} enviado a ${resAlumnos.exitosos}/${resAlumnos.total} alumnos.`);
+        })
+        .catch((err) => {
+          console.error('[EMAIL ERROR] Error al enviar correos a los alumnos:', err);
+        });
+    }
+
+    // 6. Envío exclusivo por correo electrónico a las familias si el regente lo solicitó
     if (notificarFamiliasVal === 1 && familiasParaEmail.length > 0) {
-      const resumenEmails = await emailService.enviarAvisoAFamilias({
-        aviso: avisoCreado,
-        destinatarios: familiasParaEmail,
-      });
-      avisoCreado.envio_emails = resumenEmails;
-    } else {
-      avisoCreado.envio_emails = { total: 0, exitosos: 0, fallidos: 0, detalle: [] };
+      emailService
+        .enviarAvisoAFamilias({
+          aviso: avisoCreado,
+          destinatarios: familiasParaEmail,
+        })
+        .then((resFamilias) => {
+          console.log(`[EMAIL FAMILIAS] Aviso #${avisoCreado.id} enviado a ${resFamilias.exitosos}/${resFamilias.total} familias.`);
+        })
+        .catch((err) => {
+          console.error('[EMAIL ERROR] Error al enviar correos a familias:', err);
+        });
     }
 
     return avisoCreado;
@@ -427,258 +453,53 @@ const mysqlAdapter = {
     return true;
   },
 
-  async getAbsences(filters = {}) {
-    let conditions = [];
-    let params = [];
+  async updateNotice(noticeId, { titulo, contenido, categoria, destinatario, prioridad }) {
+    const tipoAviso = categoria || 'Institucional';
+    const prioridadAviso = prioridad || 'baja';
 
-    if (filters.estado && (filters.estado === 'pendiente' || filters.estado === 'confirmada')) {
-      conditions.push('aus.estado = ?');
-      params.push(filters.estado);
+    const updateSql =
+      'UPDATE avisos SET titulo = ?, contenido = ?, tipo = ?, prioridad = ? WHERE id_aviso = ?';
+    await queryAsync(updateSql, [titulo, contenido, tipoAviso, prioridadAviso, noticeId]);
+
+    if (destinatario) {
+      const { esTodos, cursos } = await this.resolveCourses(destinatario);
+      await queryAsync('DELETE FROM avisos_cursos WHERE id_aviso = ?', [noticeId]);
+      if (!esTodos && cursos.length > 0) {
+        const avisosCursosValues = cursos.map(c => [noticeId, c.id_curso]);
+        await queryAsync('INSERT INTO avisos_cursos (id_aviso, id_curso) VALUES ?', [avisosCursosValues]);
+      }
     }
-    if (filters.curso && !isNaN(Number(filters.curso))) {
-      conditions.push('c.id_curso = ?');
-      params.push(Number(filters.curso));
-    }
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-
-    const sql =
+    const getAvisoSql =
       'SELECT ' +
-      '  aus.id_ausencia AS id, ' +
-      '  CONCAT(u.nombre, \' \', u.apellido) AS profesorNombre, ' +
-      '  u.id_usuario AS profesorId, ' +
-      '  DATE_FORMAT(aus.fecha, \'%Y-%m-%d\') AS fecha, ' +
-      '  CONCAT(TIME_FORMAT(h.hora_inicio, \'%H:%i\'), \' a \', TIME_FORMAT(h.hora_fin, \'%H:%i\'), \' hs\') AS horario, ' +
-      '  m.nombre AS materia, ' +
-      '  CONCAT(c.anio, \'° \', c.division) AS curso, ' +
-      '  c.id_curso, ' +
-      '  aus.motivo, ' +
-      '  COALESCE(aus.estado, \'pendiente\') AS estado, ' +
-      '  aus.confirmado_por AS confirmadoPor, ' +
-      '  DATE_FORMAT(aus.fecha_confirmacion, \'%Y-%m-%d\') AS fechaConfirmacion, ' +
-      '  aus.notificar_familias ' +
-      'FROM ausencias aus ' +
-      'JOIN horarios h ON aus.id_horario = h.id_horario ' +
-      'JOIN profesores p ON h.id_profesor = p.id_profesor ' +
-      'JOIN usuarios u ON p.id_usuario = u.id_usuario ' +
-      'JOIN materias m ON h.id_materia = m.id_materia ' +
-      'JOIN cursos c ON h.id_curso = c.id_curso ' +
-      whereClause + ' ' +
-      'ORDER BY aus.fecha DESC, aus.id_ausencia DESC';
-    return queryAsync(sql, params);
-  },
-
-  /* [ROL: Profesor] Consulta SQL exclusiva de ausencias por profesor - INACTIVO
-  async getAbsencesByProfesor(userId) {
-    const sql =
-      'SELECT ' +
-      '  aus.id_ausencia AS id, ' +
-      '  CONCAT(u.nombre, \' \', u.apellido) AS profesorNombre, ' +
-      '  u.id_usuario AS profesorId, ' +
-      '  DATE_FORMAT(aus.fecha, \'%Y-%m-%d\') AS fecha, ' +
-      '  CONCAT(TIME_FORMAT(h.hora_inicio, \'%H:%i\'), \' a \', TIME_FORMAT(h.hora_fin, \'%H:%i\'), \' hs\') AS horario, ' +
-      '  m.nombre AS materia, ' +
-      '  CONCAT(c.anio, \'° \', c.division) AS curso, ' +
-      '  c.id_curso, ' +
-      '  aus.motivo, ' +
-      '  COALESCE(aus.estado, \'pendiente\') AS estado, ' +
-      '  aus.confirmado_por AS confirmadoPor, ' +
-      '  DATE_FORMAT(aus.fecha_confirmacion, \'%Y-%m-%d\') AS fechaConfirmacion, ' +
-      '  aus.notificar_familias ' +
-      'FROM ausencias aus ' +
-      'JOIN horarios h ON aus.id_horario = h.id_horario ' +
-      'JOIN profesores p ON h.id_profesor = p.id_profesor ' +
-      'JOIN usuarios u ON p.id_usuario = u.id_usuario ' +
-      'JOIN materias m ON h.id_materia = m.id_materia ' +
-      'JOIN cursos c ON h.id_curso = c.id_curso ' +
-      'WHERE p.id_usuario = ? ' +
-      'ORDER BY aus.fecha DESC, aus.id_ausencia DESC';
-    return queryAsync(sql, [userId]);
-  },
-  */
-
-  async getAbsencesByPreceptor(userId) {
-    const sql =
-      'SELECT ' +
-      '  aus.id_ausencia AS id, ' +
-      '  CONCAT(u.nombre, \' \', u.apellido) AS profesorNombre, ' +
-      '  u.id_usuario AS profesorId, ' +
-      '  DATE_FORMAT(aus.fecha, \'%Y-%m-%d\') AS fecha, ' +
-      '  CONCAT(TIME_FORMAT(h.hora_inicio, \'%H:%i\'), \' a \', TIME_FORMAT(h.hora_fin, \'%H:%i\'), \' hs\') AS horario, ' +
-      '  m.nombre AS materia, ' +
-      '  CONCAT(c.anio, \'° \', c.division) AS curso, ' +
-      '  c.id_curso, ' +
-      '  aus.motivo, ' +
-      '  COALESCE(aus.estado, \'pendiente\') AS estado, ' +
-      '  aus.confirmado_por AS confirmadoPor, ' +
-      '  DATE_FORMAT(aus.fecha_confirmacion, \'%Y-%m-%d\') AS fechaConfirmacion, ' +
-      '  aus.notificar_familias ' +
-      'FROM ausencias aus ' +
-      'JOIN horarios h ON aus.id_horario = h.id_horario ' +
-      'JOIN profesores p ON h.id_profesor = p.id_profesor ' +
-      'JOIN usuarios u ON p.id_usuario = u.id_usuario ' +
-      'JOIN materias m ON h.id_materia = m.id_materia ' +
-      'JOIN cursos c ON h.id_curso = c.id_curso ' +
-      'JOIN preceptor_cursos pc ON c.id_curso = pc.id_curso ' +
-      'JOIN preceptores prec ON pc.id_preceptor = prec.id_preceptor ' +
-      'WHERE prec.id_usuario = ? ' +
-      'ORDER BY aus.fecha DESC, aus.id_ausencia DESC';
-    return queryAsync(sql, [userId]);
-  },
-
-  async getAbsencesSummary() {
-    const sql =
-      'SELECT ' +
-      '  COUNT(*) AS total, ' +
-      '  SUM(CASE WHEN aus.estado = \'pendiente\' THEN 1 ELSE 0 END) AS pendientes, ' +
-      '  SUM(CASE WHEN aus.estado = \'confirmada\' THEN 1 ELSE 0 END) AS confirmadas, ' +
-      '  COUNT(DISTINCT h.id_profesor) AS profesoresInvolucrados, ' +
-      '  COUNT(DISTINCT h.id_curso) AS cursosAfectados ' +
-      'FROM ausencias aus ' +
-      'JOIN horarios h ON aus.id_horario = h.id_horario';
-    const rows = await queryAsync(sql);
+      '  a.id_aviso AS id, ' +
+      '  a.titulo, ' +
+      '  a.contenido, ' +
+      '  DATE_FORMAT(a.fecha_publicacion, \'%Y-%m-%d\') AS fecha, ' +
+      '  a.tipo AS categoria, ' +
+      '  a.prioridad, ' +
+      '  a.notificar_familias, ' +
+      '  MAX(ac.id_curso) AS id_curso, ' +
+      '  CASE ' +
+      '    WHEN COUNT(ac.id_curso) = 0 THEN \'Todos\' ' +
+      '    WHEN COUNT(DISTINCT ac.id_curso) = (SELECT COUNT(*) FROM cursos) THEN \'Todos\' ' +
+      '    WHEN COUNT(DISTINCT c.turno) = 1 AND COUNT(DISTINCT ac.id_curso) = (SELECT COUNT(*) FROM cursos WHERE turno = MAX(c.turno)) THEN CONCAT(\'Turno \', MAX(c.turno)) ' +
+      '    WHEN COUNT(DISTINCT ac.id_curso) = 1 THEN MAX(CONCAT(c.anio, \'° \', c.division)) ' +
+      '    ELSE GROUP_CONCAT(DISTINCT CONCAT(c.anio, \'° \', c.division) ORDER BY c.anio, c.division SEPARATOR \', \') ' +
+      '  END AS destinatario, ' +
+      '  CONCAT(u.nombre, \' \', u.apellido) AS autor, ' +
+      '  u.rol AS rolAutor, ' +
+      '  a.id_usuario ' +
+      'FROM avisos a ' +
+      'LEFT JOIN avisos_cursos ac ON a.id_aviso = ac.id_aviso ' +
+      'LEFT JOIN cursos c ON ac.id_curso = c.id_curso ' +
+      'LEFT JOIN usuarios u ON a.id_usuario = u.id_usuario ' +
+      'WHERE a.id_aviso = ? ' +
+      'GROUP BY a.id_aviso ' +
+      'LIMIT 1';
+    const rows = await queryAsync(getAvisoSql, [noticeId]);
     return rows[0];
   },
-
-  /* [ROL: Profesor] Inserción SQL exclusiva de nueva ausencia reportada por profesor - INACTIVO
-  async createAbsence({ id_horario, fecha, motivo, notificar_familias }) {
-    const notificarFamiliasVal = notificar_familias ? 1 : 0;
-    const insertSql = 'INSERT INTO ausencias (id_horario, fecha, motivo, notificar_familias) VALUES (?, ?, ?, ?)';
-    const result = await queryAsync(insertSql, [id_horario, fecha, motivo || null, notificarFamiliasVal]);
-
-    const getSql =
-      'SELECT ' +
-      '  aus.id_ausencia AS id, ' +
-      '  CONCAT(u.nombre, \' \', u.apellido) AS profesorNombre, ' +
-      '  u.id_usuario AS profesorId, ' +
-      '  DATE_FORMAT(aus.fecha, \'%Y-%m-%d\') AS fecha, ' +
-      '  CONCAT(TIME_FORMAT(h.hora_inicio, \'%H:%i\'), \' a \', TIME_FORMAT(h.hora_fin, \'%H:%i\'), \' hs\') AS horario, ' +
-      '  m.nombre AS materia, ' +
-      '  CONCAT(c.anio, \'° \', c.division) AS curso, ' +
-      '  c.id_curso, ' +
-      '  aus.motivo, ' +
-      '  COALESCE(aus.estado, \'pendiente\') AS estado, ' +
-      '  aus.confirmado_por AS confirmadoPor, ' +
-      '  DATE_FORMAT(aus.fecha_confirmacion, \'%Y-%m-%d\') AS fechaConfirmacion, ' +
-      '  aus.notificar_familias ' +
-      'FROM ausencias aus ' +
-      'JOIN horarios h ON aus.id_horario = h.id_horario ' +
-      'JOIN profesores p ON h.id_profesor = p.id_profesor ' +
-      'JOIN usuarios u ON p.id_usuario = u.id_usuario ' +
-      'JOIN materias m ON h.id_materia = m.id_materia ' +
-      'JOIN cursos c ON h.id_curso = c.id_curso ' +
-      'WHERE aus.id_ausencia = ?';
-    const rows = await queryAsync(getSql, [result.insertId]);
-    return rows[0];
-  },
-  */
-
-  async confirmAbsence(absenceId, { id_usuario, confirmado_por }) {
-    const infoSql =
-      'SELECT ' +
-      '  aus.id_ausencia, ' +
-      '  aus.id_horario, ' +
-      '  DATE_FORMAT(aus.fecha, \'%Y-%m-%d\') AS fecha, ' +
-      '  aus.motivo, ' +
-      '  CONCAT(u.nombre, \' \', u.apellido) AS profesorNombre, ' +
-      '  m.nombre AS materia, ' +
-      '  CONCAT(c.anio, \'° \', c.division) AS curso, ' +
-      '  c.id_curso, ' +
-      '  CONCAT(TIME_FORMAT(h.hora_inicio, \'%H:%i\'), \' a \', TIME_FORMAT(h.hora_fin, \'%H:%i\'), \' hs\') AS horario, ' +
-      '  aus.notificar_familias ' +
-      'FROM ausencias aus ' +
-      'JOIN horarios h ON aus.id_horario = h.id_horario ' +
-      'JOIN profesores p ON h.id_profesor = p.id_profesor ' +
-      'JOIN usuarios u ON p.id_usuario = u.id_usuario ' +
-      'JOIN materias m ON h.id_materia = m.id_materia ' +
-      'JOIN cursos c ON h.id_curso = c.id_curso ' +
-      'WHERE aus.id_ausencia = ?';
-    const ausRows = await queryAsync(infoSql, [absenceId]);
-    if (ausRows.length === 0) return null;
-
-    const ausData = ausRows[0];
-    const nombreConfirmador = confirmado_por || 'Preceptoría';
-
-    const updSql =
-      'UPDATE ausencias ' +
-      'SET estado = \'confirmada\', confirmado_por = ?, fecha_confirmacion = CURDATE() ' +
-      'WHERE id_ausencia = ?';
-    await queryAsync(updSql, [nombreConfirmador, absenceId]);
-
-    const titulo = `Ausencia Docente: ${ausData.profesorNombre} (${ausData.materia})`;
-    const motivoStr = ausData.motivo ? ausData.motivo.toLowerCase() : 'motivos justificados';
-    const contenido = `Se informa a los alumnos de ${ausData.curso} que el día ${ausData.fecha} en el horario de ${ausData.horario} el/la docente no asistirá por ${motivoStr}. Comunicado confirmado por Preceptoría.`;
-    const tipo = 'Ausencias y Horarios';
-    const prioridad = 'alta';
-    const autorId = id_usuario;
-    const notifFamilias = ausData.notificar_familias || 0;
-
-    const insAvisoSql =
-      'INSERT INTO avisos (titulo, contenido, tipo, prioridad, id_usuario, notificar_familias) ' +
-      'VALUES (?, ?, ?, ?, ?, ?)';
-    const avResult = await queryAsync(insAvisoSql, [titulo, contenido, tipo, prioridad, autorId, notifFamilias]);
-    const nuevoAvisoId = avResult.insertId;
-
-    await queryAsync('INSERT INTO avisos_cursos (id_aviso, id_curso) VALUES (?, ?)', [nuevoAvisoId, ausData.id_curso]);
-
-    const alumnos = await queryAsync('SELECT id_usuario FROM alumnos WHERE id_curso = ?', [ausData.id_curso]);
-    if (alumnos.length > 0) {
-      const notifValues = alumnos.map(a => [nuevoAvisoId, a.id_usuario, 0, null]);
-      await queryAsync('INSERT INTO notificaciones (id_aviso, id_usuario, leido, fecha_lectura) VALUES ?', [notifValues]);
-    }
-
-    const ausenciaConfirmada = {
-      id: Number(absenceId),
-      profesorNombre: ausData.profesorNombre,
-      fecha: ausData.fecha,
-      horario: ausData.horario,
-      materia: ausData.materia,
-      curso: ausData.curso,
-      id_curso: ausData.id_curso,
-      motivo: ausData.motivo,
-      estado: 'confirmada',
-      confirmadoPor: nombreConfirmador,
-      fechaConfirmacion: new Date().toISOString().split('T')[0],
-      notificar_familias: ausData.notificar_familias
-    };
-
-    const avisoGenerado = {
-      id: nuevoAvisoId,
-      titulo,
-      contenido,
-      fecha: new Date().toISOString().split('T')[0],
-      categoria: tipo,
-      prioridad,
-      destinatario: ausData.curso,
-      id_curso: ausData.id_curso,
-      autor: nombreConfirmador,
-      rolAutor: 'preceptor',
-      notificar_familias: notifFamilias === 1
-    };
-
-    return { ausencia: ausenciaConfirmada, aviso: avisoGenerado };
-  },
-
-  /* [ROL: Profesor] Consulta SQL exclusiva de horarios asignados al profesor - INACTIVO
-  async getTeacherSchedules(userId) {
-    const sql =
-      'SELECT ' +
-      '  h.id_horario, ' +
-      '  m.nombre AS materia, ' +
-      '  CONCAT(c.anio, \'° \', c.division) AS curso, ' +
-      '  h.id_curso, ' +
-      '  h.dia_semana, ' +
-      '  TIME_FORMAT(h.hora_inicio, \'%H:%i\') AS hora_inicio, ' +
-      '  TIME_FORMAT(h.hora_fin, \'%H:%i\') AS hora_fin ' +
-      'FROM horarios h ' +
-      'JOIN profesores p ON h.id_profesor = p.id_profesor ' +
-      'JOIN materias m ON h.id_materia = m.id_materia ' +
-      'JOIN cursos c ON h.id_curso = c.id_curso ' +
-      'WHERE p.id_usuario = ? ' +
-      'ORDER BY h.dia_semana, h.hora_inicio';
-    return queryAsync(sql, [userId]);
-  },
-  */
 
   async getReadNotifications(userId) {
     const sql = 'SELECT id_aviso FROM notificaciones WHERE id_usuario = ? AND leido = 1';

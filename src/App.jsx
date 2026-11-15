@@ -2,20 +2,14 @@ import { useState, useEffect } from "react";
 import "./App.css";
 import "./styles/dashboard.css";
 
-import { ROLES } from "./data/mockData";
-import { noticeService, absenceService, notificationService } from "./services";
+import { ROLES, isAutoridad } from "./data/mockData";
+import { noticeService, notificationService } from "./services";
 import Header from "./components/common/Header";
 import ChangePasswordModal from "./components/common/ChangePasswordModal";
 import LoginPage from "./pages/LoginPage";
 import AlumnoDashboard from "./pages/AlumnoDashboard";
-/* [ROL: Profesor] Import exclusivo del panel de Profesor - INACTIVO
-import ProfesorDashboard from "./pages/ProfesorDashboard";
-*/
 import PreceptorDashboard from "./pages/PreceptorDashboard";
 import RegenteDashboard from "./pages/RegenteDashboard";
-/* [ROL: Secretaria] Import exclusivo del panel de Secretaría - INACTIVO
-import SecretariaDashboard from "./pages/SecretariaDashboard";
-*/
 
 function App() {
   // Estado de usuario autenticado mediante la BD real
@@ -26,7 +20,6 @@ function App() {
 
   // Estados de datos escolares reales
   const [notices, setNotices] = useState([]);
-  const [absences, setAbsences] = useState([]);
   const [readNoticeIds, setReadNoticeIds] = useState([]);
 
   // Estado para el modal de cambio de contraseña
@@ -46,25 +39,12 @@ function App() {
       try {
         const noticesPromise = noticeService.getAll();
 
-        let absencesPromise = Promise.resolve([]);
-        /* [ROL: Profesor] Consulta exclusiva de ausencias propias del profesor - INACTIVO
-        if (currentUser.rol === ROLES.PROFESOR) {
-          absencesPromise = absenceService.getByProfesor(currentUser.id_usuario);
-        } else
-        */
-        if (currentUser.rol === ROLES.PRECEPTOR) {
-          absencesPromise = absenceService.getByPreceptor(currentUser.id_usuario);
-        } else if (currentUser.rol !== ROLES.ALUMNO) {
-          absencesPromise = absenceService.getAll();
-        }
-
         const notificationsPromise = currentUser.id_usuario
           ? notificationService.getReadNotices(currentUser.id_usuario)
           : Promise.resolve([]);
 
-        const [noticesData, absencesData, notificationsData] = await Promise.all([
+        const [noticesData, notificationsData] = await Promise.all([
           noticesPromise,
-          absencesPromise,
           notificationsPromise,
         ]);
 
@@ -72,9 +52,6 @@ function App() {
           if (Array.isArray(noticesData)) {
             setNotices(noticesData);
             setConnectionError(null);
-          }
-          if (Array.isArray(absencesData)) {
-            setAbsences(absencesData);
           }
           if (Array.isArray(notificationsData)) {
             setReadNoticeIds(notificationsData);
@@ -113,7 +90,6 @@ function App() {
     localStorage.removeItem("avisos_current_user");
     localStorage.removeItem("avisos_auth_token");
     setNotices([]);
-    setAbsences([]);
     setReadNoticeIds([]);
     setConnectionError(null);
   }
@@ -138,6 +114,23 @@ function App() {
     }
   }
 
+  async function handleEditNotice(updatedNotice) {
+    try {
+      const result = await noticeService.update(updatedNotice.id, {
+        titulo: updatedNotice.titulo,
+        contenido: updatedNotice.contenido,
+        categoria: updatedNotice.categoria,
+        destinatario: updatedNotice.destinatario,
+        prioridad: updatedNotice.prioridad,
+      });
+      setNotices((prev) => prev.map((n) => (n.id === result.id ? result : n)));
+      return result;
+    } catch (error) {
+      console.error("Error al editar aviso:", error);
+      throw error;
+    }
+  }
+
   async function handleDeleteNotice(noticeId) {
     if (!window.confirm("¿Estás seguro de que deseás eliminar este aviso?")) return;
 
@@ -147,54 +140,6 @@ function App() {
     } catch (error) {
       console.error("Error al eliminar aviso:", error);
       alert(error.message || "Error al eliminar el aviso.");
-    }
-  }
-
-  /* [ROL: Profesor] Manejador exclusivo de registro de ausencias del profesor - INACTIVO
-  async function handleAddAbsence(newAbsence) {
-    try {
-      const ausenciaCreada = await absenceService.create({
-        id_horario: newAbsence.id_horario,
-        fecha: newAbsence.fecha,
-        motivo: newAbsence.motivo,
-        notificar_familias: newAbsence.notificar_familias,
-      });
-
-      setAbsences((prev) => [ausenciaCreada, ...prev]);
-      alert(
-        `Una vez confirmado por preceptoría, los alumnos de ${ausenciaCreada.curso || 'la división'} recibirán la notificación.`
-      );
-    } catch (error) {
-      console.error("Error al registrar ausencia:", error);
-      alert(error.message || "No se pudo registrar la ausencia.");
-    }
-  }
-  */
-
-  async function handleConfirmAbsence(absenceId) {
-    const targetAbsence = absences.find((a) => a.id === absenceId);
-    if (!targetAbsence) return;
-
-    try {
-      const resultado = await absenceService.confirm(absenceId, {
-        id_usuario: currentUser?.id_usuario,
-        confirmado_por: currentUser?.nombre ? `${currentUser.nombre} ${currentUser.apellido || ""}`.trim() : "Preceptoría",
-      });
-
-      setAbsences((prev) =>
-        prev.map((a) => (a.id === absenceId ? resultado.ausencia : a))
-      );
-
-      if (resultado.aviso) {
-        setNotices((prev) => [resultado.aviso, ...prev]);
-      }
-
-      alert(
-        `Ausencia confirmada para los alumnos de ${resultado.ausencia.curso}.`
-      );
-    } catch (error) {
-      console.error("Error al confirmar ausencia:", error);
-      alert(error.message || "No se pudo confirmar la ausencia.");
     }
   }
 
@@ -213,6 +158,7 @@ function App() {
 
   async function handleMarkAllRead() {
     const studentCourse = (currentUser?.curso || "").toLowerCase();
+    const studentTurno = (currentUser?.turno || "").toLowerCase();
     const studentNotices = notices.filter((n) => {
       const target = (n.destinatario || "").toLowerCase();
       return (
@@ -220,6 +166,7 @@ function App() {
         target === "todos" ||
         target === "alumnos" ||
         (studentCourse && target.includes(studentCourse)) ||
+        (studentTurno && target.includes(studentTurno)) ||
         (currentUser?.id_curso && n.id_curso === currentUser.id_curso)
       );
     });
@@ -251,53 +198,45 @@ function App() {
           />
         );
 
-      /* [ROL: Profesor] Renderizado exclusivo del panel de Profesor - INACTIVO
-      case ROLES.PROFESOR:
-        return (
-          <ProfesorDashboard
-            currentUser={currentUser}
-            notices={notices}
-            absences={absences}
-            onAddAbsence={handleAddAbsence}
-          />
-        );
-      */
-
       case ROLES.PRECEPTOR:
         return (
           <PreceptorDashboard
             currentUser={currentUser}
             notices={notices}
-            absences={absences}
-            onConfirmAbsence={handleConfirmAbsence}
             onAddNotice={handleAddNotice}
+            onEditNotice={handleEditNotice}
             onDeleteNotice={handleDeleteNotice}
           />
         );
 
       case ROLES.REGENTE:
+      case ROLES.JEFE_TALLER:
+      case ROLES.AUTORIDAD:
+      case ROLES.DIRECTIVO:
         return (
           <RegenteDashboard
             currentUser={currentUser}
             notices={notices}
-            absences={absences}
             onAddNotice={handleAddNotice}
+            onEditNotice={handleEditNotice}
             onDeleteNotice={handleDeleteNotice}
           />
         );
 
-      /* [ROL: Secretaria] Renderizado exclusivo del panel de Secretaría - INACTIVO
-      case ROLES.SECRETARIA:
-        return (
-          <SecretariaDashboard
-            currentUser={currentUser}
-            notices={notices}
-            absences={absences}
-          />
-        );
-      */
-
       default:
+        // Catch-all para cualquier otro rol de autoridad no listado explícitamente
+        if (isAutoridad(currentUser.rol)) {
+          return (
+            <RegenteDashboard
+              currentUser={currentUser}
+              notices={notices}
+              onAddNotice={handleAddNotice}
+              onEditNotice={handleEditNotice}
+              onDeleteNotice={handleDeleteNotice}
+            />
+          );
+        }
+        // eslint-disable-next-line no-fallthrough
         return (
           <div className="dashboard-content">
             <div className="empty-state">

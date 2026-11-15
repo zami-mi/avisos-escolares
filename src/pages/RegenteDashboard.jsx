@@ -3,13 +3,16 @@ import NoticeCard from "../components/notices/NoticeCard";
 import NoticeFilters from "../components/notices/NoticeFilters";
 import NoticeDetailModal from "../components/common/NoticeDetailModal";
 import CreateNoticeModal from "../components/notices/CreateNoticeModal";
+import EditNoticeModal from "../components/notices/EditNoticeModal";
 import { noticeService } from "../services";
 import NoticeTimeline from "../components/common/NoticeTimeline";
+import { isAutoridad } from "../data/mockData";
 
 export default function RegenteDashboard({
   currentUser,
   notices = [],
   onAddNotice,
+  onEditNotice,
   onDeleteNotice,
 }) {
   const [activeTab, setActiveTab] = useState("avisos");
@@ -17,6 +20,7 @@ export default function RegenteDashboard({
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [selectedNotice, setSelectedNotice] = useState(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingNotice, setEditingNotice] = useState(null);
 
   // Avisos propios del regente cargados desde la base de datos
   const [myNotices, setMyNotices] = useState([]);
@@ -43,6 +47,14 @@ export default function RegenteDashboard({
     setMyNotices((prev) => prev.filter((n) => n.id !== noticeId));
   };
 
+  const handleEditMyNotice = async (updatedNotice) => {
+    const result = await onEditNotice(updatedNotice);
+    if (result) {
+      setMyNotices((prev) => prev.map((n) => (n.id === result.id ? result : n)));
+    }
+    return result;
+  };
+
   const handleAddNoticeRegente = async (newNotice) => {
     await onAddNotice(newNotice);
     if (currentUser?.id_usuario) {
@@ -52,8 +64,8 @@ export default function RegenteDashboard({
     }
   };
 
-  // Solo los avisos emitidos por regentes son visibles en este panel
-  const regenteNotices = notices.filter((n) => n.rolAutor === 'regente');
+  // Avisos emitidos por cualquier rol de autoridad (regente, jefe de taller, directivo, etc.)
+  const regenteNotices = notices.filter((n) => isAutoridad(n.rolAutor));
 
   const filteredNotices = regenteNotices.filter((notice) => {
     const matchesSearch =
@@ -78,18 +90,14 @@ export default function RegenteDashboard({
       <div className="welcome-hero">
         <div className="hero-text">
           <h1>
-            <i className="fa-solid fa-building-columns" style={{ marginRight: "10px" }}></i>Panel de regencia</h1>
-          <p>
-            Regente: <strong>{currentUser?.nombre} {currentUser?.apellido}</strong>
-          </p>
+          <i className="fa-solid fa-building-columns"></i>¡Hola, <strong>{currentUser?.nombre} {currentUser?.apellido}</strong>!</h1>
+          <p>Panel de administración escolar</p>
         </div>
         <div className="hero-actions">
           <button
             className="btn-primary-action"
             onClick={() => setIsCreateOpen(true)}
-          >
-            <i className="fa-solid fa-bullhorn"></i> Crear aviso
-          </button>
+          >Crear aviso</button>
         </div>
       </div>
 
@@ -137,20 +145,27 @@ export default function RegenteDashboard({
 
           {filteredNotices.length > 0 ? (
             <div className="notices-grid">
-              {filteredNotices.map((notice) => (
-                <NoticeCard
-                  key={notice.id}
-                  notice={notice}
-                  onSelect={setSelectedNotice}
-                  onDelete={onDeleteNotice}
-                  canDelete={notice.rolAutor === "regente" || notice.autor === `${currentUser?.nombre} ${currentUser?.apellido}`}
-                />
-              ))}
+              {filteredNotices.map((notice) => {
+                const isAuthor =
+                  notice.rolAutor === "regente" ||
+                  (currentUser?.id_usuario && notice.id_usuario === currentUser.id_usuario) ||
+                  (currentUser?.nombre && notice.autor?.toLowerCase().includes(currentUser.nombre.toLowerCase()));
+                return (
+                  <NoticeCard
+                    key={notice.id}
+                    notice={notice}
+                    onSelect={setSelectedNotice}
+                    onDelete={onDeleteNotice}
+                    onEdit={setEditingNotice}
+                    canDelete={isAuthor}
+                    canEdit={isAuthor}
+                  />
+                );
+              })}
             </div>
           ) : (
             <div className="empty-state">
               <h3>No se encontraron avisos</h3>
-              <p>No hay avisos escolares que coincidan con la búsqueda.</p>
             </div>
           )}
         </div>
@@ -159,16 +174,7 @@ export default function RegenteDashboard({
           <div style={{ marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <h3 style={{ margin: 0, color: "#2d3748" }}>Mis avisos publicados</h3>
-              <p style={{ margin: "4px 0 0 0", fontSize: "0.85rem", color: "#718096" }}>Administra los avisos
-              </p>
             </div>
-            <button
-              className="btn-primary-action"
-              style={{ padding: "6px 14px", fontSize: "0.82rem" }}
-              onClick={() => setIsCreateOpen(true)}
-            >
-              <i className="fa-solid fa-plus"></i> Nuevo aviso
-            </button>
           </div>
 
           <NoticeFilters
@@ -190,7 +196,9 @@ export default function RegenteDashboard({
                   notice={notice}
                   onSelect={setSelectedNotice}
                   onDelete={handleDeleteMyNotice}
+                  onEdit={setEditingNotice}
                   canDelete={true}
+                  canEdit={true}
                 />
               ))}
             </div>
@@ -213,6 +221,14 @@ export default function RegenteDashboard({
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         onSave={handleAddNoticeRegente}
+        currentUser={currentUser}
+      />
+
+      <EditNoticeModal
+        isOpen={!!editingNotice}
+        notice={editingNotice}
+        onClose={() => setEditingNotice(null)}
+        onSave={handleEditMyNotice}
         currentUser={currentUser}
       />
     </div>
