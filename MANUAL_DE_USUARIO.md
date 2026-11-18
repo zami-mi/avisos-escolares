@@ -1,136 +1,107 @@
-# Manual de Usuario - Sistema de Avisos Escolares
+# Sistema de Avisos Escolares
 
-Guía de referencia y uso para la comunidad educativa de la plataforma institucional de avisos y gestión de ausencias docentes.
+Plataforma institucional para publicar y consultar avisos escolares. Los alumnos ven los avisos en la plataforma y también los reciben por correo electrónico.
+
+## Contenido
+
+1. [Acceso a la plataforma](#1-acceso-a-la-plataforma)
+2. [Cómo se comunican los avisos](#2-cómo-se-comunican-los-avisos)
+3. [Guía de uso por rol](#3-guía-de-uso-por-rol)
+4. [Preguntas frecuentes](#4-preguntas-frecuentes)
+5. [Notas técnicas](#5-notas-técnicas)
 
 ---
 
-## 1. Acceso General a la Plataforma
+## 1. Acceso a la plataforma
 
-### Inicio de Sesión
 1. Ingrese a la dirección web del sistema escolar.
-2. Complete su **Correo electrónico institucional** y **Contraseña**.
+2. Complete su **correo electrónico institucional** y **contraseña**.
 3. Presione **"Ingresar"**.
-4. El sistema detectará automáticamente su rol y lo redirigirá a su panel correspondiente.
+4. El sistema detecta su rol y lo lleva a su panel.
 
-> **Nota:** En la esquina superior derecha siempre dispondrá del indicador de su usuario, el distintivo con su rol y el botón **"Cerrar sesión"** para resguardar la privacidad al terminar de utilizar la computadora.
-
----
-
-## 2. Guía de Uso por Rol
-
-### 👨‍🎓 Rol: Alumno / Estudiante
-
-El panel del alumno está diseñado para una consulta rápida de comunicados dirigidos a su curso o a toda la escuela, además del seguimiento de lectura.
-
-#### Funcionalidades Principales:
-1. **Identificación de Curso y Turno:**
-   - La cabecera muestra el curso al que pertenece (ej. `5° 1ra - Turno Tarde`) y los avisos dirigidos específicamente a su división.
-2. **Visualización y Lectura de Avisos:**
-   - Cada aviso cuenta con su fecha, autor, categoría y nivel de prioridad (normal, media, alta).
-   - Al hacer clic en **"Ver aviso"**, se abre el detalle completo y el aviso **se marca automáticamente como leído**.
-3. **Control de Pendientes ("Marcar como leídas"):**
-   - El contador superior destaca cuántos avisos tiene pendientes de lectura.
-   - Dispone del botón **"Marcar como leídas"** para limpiar de una sola vez todas las notificaciones pendientes.
-4. **Filtros de Búsqueda:**
-   - Pestañas rápidas: **"Todos los avisos"** o **"No leídas"**.
-   - Barra de búsqueda por texto (ej. por nombre de materia o profesor) y selector por categoría.
+> **Nota:** en la esquina superior derecha se muestran su usuario, el distintivo de su rol y el botón **"Cerrar sesión"**. Úselo siempre al terminar, sobre todo en computadoras compartidas.
 
 ---
 
-### 👩‍🏫 Rol: Profesor / Docente
+## 2. Cómo se comunican los avisos
 
-Permite a los docentes informar sus ausencias con antelación y consultar los comunicados y circulares institucionales.
+| Quién publica | A quién puede dirigirse | Prioridades disponibles |
+|---|---|---|
+| **Preceptor** | Solo a los cursos que tiene asignados | Normal o Media |
+| **Regente** | Toda la escuela, o un turno completo (mañana, tarde o noche) | Normal, Media o Alta |
 
-#### Funcionalidades Principales:
-1. **Pestaña "Mis ausencias":**
-   - Muestra el historial de ausencias informadas por el docente y su estado:
-     - **Pendiente**: Solicitud recibida en espera de validación de Preceptoría.
-     - **Confirmada**: Aprobada por preceptoría; genera aviso automático a los estudiantes.
-2. **Informar una Nueva Ausencia:**
-   - Presione el botón **"Informar ausencia"**.
-   - Seleccione la **Materia y Horario** (se cargan según sus horas y divisiones asignadas).
-   - Indique la **Fecha** de la falta.
-   - Opcionalmente complete el **Motivo** (ej. "Turno médico", "Mesa de examen", "Motivos personales").
-   - Presione **"Registrar ausencia"**.
-3. **Pestaña "Circulares y avisos":**
-   - Permite consultar comunicados oficiales emitidos por el equipo directivo o secretaría.
+Además de verlos en la plataforma, **los alumnos reciben los avisos por correo electrónico**.
 
 ---
 
-### 🧑‍💼 Rol: Preceptor
+## 3. Guía de uso por rol
 
-El preceptor es el nexo operativo entre los docentes y los alumnos de las divisiones a su cargo. Gestiona las justificaciones de falta y emite comunicados grupales.
+### Alumno
 
-#### Funcionalidades Principales:
-1. **Alerta de Ausencias Pendientes:**
-   - Si un docente informó una falta para alguna de sus divisiones, se desplegará un banner de aviso:
-     > *"Tenés X formulario(s) de ausencia docente pendiente(s) de confirmación."*
-2. **Confirmación de Ausencias Docentes:**
-   - En la tabla de ausencias, presione el botón **"Confirmar"** en la fila correspondiente.
-   - Al confirmar, el sistema automáticamente:
-     - Cambia el estado a `Confirmada`.
-     - Registra quién la confirmó y la fecha.
-     - **Genera un aviso automático** para los alumnos del curso afectado informando el horario y la inasistencia.
-3. **Creación de Avisos Escolares:**
-   - Presione el botón **"Crear aviso"**.
-   - Ingrese título, categoría, prioridad y el texto detallado.
-   - En **"Dirigido a"**, elija entre sus divisiones a cargo o "Toda la escuela".
-   - Active si corresponde la opción de **"Notificar a las familias por correo electrónico"**.
+Desde su panel puede consultar los comunicados dirigidos a su curso, a su turno o a toda la escuela, y hacer seguimiento de lo que ya leyó.
+
+1. **Curso y turno:** la cabecera muestra su curso (ej. `5° 1ra - Turno Tarde`) y los avisos que le corresponden.
+2. **Lectura de avisos:** cada aviso indica fecha, autor, categoría y prioridad (normal, media o alta). Al hacer clic en **"Ver aviso"** se abre el detalle y queda **marcado como leído**.
+3. **Avisos de ausencia docente:** si un profesor falta, el preceptor lo informa y le llega un aviso con el horario y la inasistencia. No necesita hacer nada más.
+4. **Pendientes:** el contador superior indica cuántos avisos no leyó. El botón **"Marcar como leídas"** los limpia todos de una vez.
+5. **Filtros:** pestañas **"Todos los avisos"** y **"No leídas"**, búsqueda por texto (materia o profesor) y selector por categoría.
+6. **Correo electrónico:** también recibe los avisos en su casilla de correo.
 
 ---
 
-### 🏛️ Rol: Regente
+### Preceptor
 
-Panel directivo y de supervisión académica con facultades de control y publicación de circulares institucionales.
+Comunica las novedades de los cursos que tiene a cargo, incluidas las ausencias de docentes.
 
-#### Funcionalidades Principales:
-1. **Supervisión de Ausencias Generales:**
-   - Pestaña **"Ausencias docentes"**: monitoreo global de todas las inasistencias de la institución (pendientes y confirmadas).
-2. **Emisión de Avisos Institucionales y por Curso:**
-   - Botón **"Crear aviso"**: puede publicar comunicados con alcance a toda la institución o seleccionar cursos puntuales (`1° 1`, `2° 2`, `5° 1`, etc.).
-   - Capacidad de activar la notificación por correo directo a los hogares.
-3. **Pestaña "Mis avisos":**
-   - Administra y supervisa los comunicados emitidos bajo su autoría.
-   - Permite eliminar avisos obsoletos o corregir la cartelera digital.
+1. **Informar la ausencia de un docente**
+   - Desde la opción de crear aviso, informe la ausencia del profesor e indique el curso y el horario.
+   - El aviso llega directamente a los alumnos del curso afectado. No hay un paso previo de confirmación.
+2. **Crear avisos:** presione **"Crear aviso"** y complete:
+   - **Título, categoría y texto.**
+   - **Prioridad:** solo **Normal** o **Media**. La prioridad Alta está reservada a Regencia.
+   - **Dirigido a:** únicamente los cursos que tiene asignados. No puede publicar para cursos de otros preceptores ni para toda la escuela.
+3. **Familias:** el formulario no incluye la opción de notificar a las familias por correo. Esa comunicación institucional no corresponde a Preceptoría.
 
----
-
-### 📂 Rol: Secretaría
-
-Panel administrativo orientado al registro histórico, estadísticas escolares y archivo institucional.
-
-#### Funcionalidades Principales:
-1. **Registro Central de Ausencias:**
-   - Métricas en tiempo real: total de ausencias registradas, cantidad de pendientes, confirmadas y porcentaje de justificación.
-   - **Filtros avanzados combinados:**
-     - Filtrar por estado (`Pendiente` / `Confirmada`).
-     - Filtrar por **Docente**.
-     - Filtrar por **Curso / División**.
-2. **Cartelera y Archivo Histórico de Avisos:**
-   - Pestaña **"Todos los avisos"**: acceso al archivo completo de comunicados institucionales emitidos por cualquier autoridad del colegio.
+> **Importante:** el sistema valida, además de lo que se ve en pantalla, que el curso elegido esté realmente asignado al preceptor y que la prioridad esté permitida. Si algo no coincide, el aviso no se publica.
 
 ---
 
-## 3. Notificación a Familias por Correo Electrónico
+### Regente
 
-Al momento de redactar un aviso (desde Preceptoría o Regencia):
+Panel directivo para emitir comunicados institucionales.
 
-1. Marque la casilla:
-   ☑ **"Notificar a las familias por correo electrónico"**
-2. Al pulsar **"Publicar"**, el sistema:
-   - Publica el aviso en la plataforma para los alumnos correspondientes.
-   - Recorre el padrón de familias vinculadas al curso seleccionado.
-   - Envía un correo individual formal y limpio a la casilla de cada tutor sin exponer los emails de los demás padres.
-3. Aparecerá un mensaje verde confirmando el envío exitoso.
+1. **Crear avisos:** presione **"Crear aviso"** y complete título, categoría, prioridad y texto.
+2. **Destinatarios:** no se eligen cursos individuales. Las opciones son:
+   1. **Toda la escuela**
+   2. **Turno mañana**
+   3. **Turno tarde**
+   4. **Turno noche**
+3. **Cómo se asigna el alcance:**
+   - Al elegir un turno, el sistema identifica automáticamente todos los cursos de ese turno y les asocia el aviso. No hace falta marcarlos uno por uno.
+   - Al elegir **"Toda la escuela"**, el aviso se asocia a todos los cursos, sin importar el turno.
+   - La asignación se hace **al momento de publicar**. Un curso creado después no recibe retroactivamente los avisos anteriores.
+4. **Pestaña "Mis avisos":** muestra solo los avisos emitidos por regentes. No aparecen los avisos de ausencias docentes ni los creados por preceptores. Desde allí puede eliminar avisos obsoletos.
 
 ---
 
-## 4. Preguntas Frecuentes y Soporte
+## 4. Preguntas frecuentes
 
-- **¿Los padres necesitan usuario y contraseña?**  
-  No. Las familias reciben los comunicados directamente en sus casillas de correo personal (Gmail, Outlook, etc.) para asegurar máxima inmediatez y facilidad.
-- **¿Qué hacer si un aviso no se visualiza en la app?**  
-  Asegúrese de haber seleccionado el curso destinatario correcto en el selector (`Curso X° X` o `Toda la escuela`).
-- **¿Cómo cambiar de cuenta?**  
-  Haga clic en el botón rojo **"Cerrar sesión"** en el encabezado superior y vuelva a ingresar con las nuevas credenciales.
+**¿Cómo se informa la ausencia de un profesor?**
+La informa el preceptor desde su panel y el aviso llega directamente a los alumnos del curso.
+
+**Soy preceptor, ¿por qué no puedo elegir "Toda la escuela" ni la prioridad Alta?**
+Son opciones exclusivas de Regencia. Para comunicados institucionales, consulte con el regente.
+
+**Soy preceptor, ¿por qué no veo un curso en el selector?**
+Solo aparecen los cursos que tiene asignados. Si falta alguno, solicite la asignación a Regencia o Administración.
+
+**Soy regente, ¿por qué no veo los avisos de los preceptores en "Mis avisos"?**
+Ese panel muestra únicamente los avisos emitidos por regentes.
+
+**Un aviso no aparece en la app, ¿qué hago?**
+Verifique el curso o turno seleccionado en los filtros y que el aviso esté dirigido a su división.
+
+**¿Cómo cambio de cuenta?**
+Presione **"Cerrar sesión"** en el encabezado y vuelva a ingresar con las otras credenciales.
+
 
