@@ -2,8 +2,6 @@
 
 Documentación para desarrolladores y quienes mantienen el sistema. Para el uso por parte de la comunidad educativa, ver `README.md`.
 
-> **Origen de la información:** este manual se basa en el informe técnico del código actual del proyecto. Los puntos marcados como **⚠️ Brecha** indican diferencias entre el comportamiento requerido y lo que hoy hace el código.
-
 ## Contenido
 
 1. [Visión general y stack](#1-visión-general-y-stack)
@@ -80,8 +78,6 @@ El backend usa un **patrón adaptador**: `server.js` no habla con MySQL directam
 
 El archivo `database/avisos_escolares.sql` incluye DDL **y datos de ejemplo**.
 
-> ⚠️ **Advertencia:** el script elimina y recrea las tablas que lista. No ejecutarlo sobre una base con datos que se quieran conservar.
-
 ### Tablas
 
 | Tabla | Columnas |
@@ -137,7 +133,6 @@ En el dump aparecen únicamente **`Mañana`** y **`Tarde`**:
 | 5 | 5° 1 | Automotores | Tarde |
 | 6 | 6° 2 | Computación | Mañana |
 
-Esto refleja el dump versionado, no necesariamente la base desplegada. No hay cursos de turno **Noche** en los datos de ejemplo, aunque el código lo contempla.
 
 ### Tablas de ausencias
 
@@ -212,8 +207,6 @@ Se usa **Nodemailer por SMTP**. La plantilla de ejemplo apunta a Gmail (`smtp.gm
 
 - El envío es **asíncrono, sin esperar** el resultado: la respuesta de creación no confirma que el correo se entregó. Los errores quedan solo en logs.
 - Si faltan credenciales SMTP, Nodemailer usa un transporte JSON de simulación (no envía nada).
-
-> Eliminar la opción "notificar a familias" del formulario del preceptor **no implica eliminar** `emailService.js` ni el envío a alumnos.
 
 ---
 
@@ -314,11 +307,3 @@ Diferencias detectadas entre lo acordado para el sistema y lo que hace hoy el c�
 - **Contraseñas en texto plano:** el adaptador acepta contraseñas heredadas sin hash y el dump de ejemplo las incluye. Migrar todas a bcrypt y no usar esos datos en producción.
 - **Token en `localStorage`:** expuesto ante XSS; considerar cookies `HttpOnly` si el riesgo lo justifica.
 - **Dump SQL:** contiene datos de muestra y credenciales de demostración; protegerlo y no reutilizarlo en producción.
-
----
-
-## 12. Tests y documentación
-
-- No hay suite de tests en el frontend. El script `test` del backend es un placeholder que termina con error.
-- No hay migraciones versionadas ni seeds separados; el SQL incluye los datos de ejemplo.
-- Documentación existente: `README.md` y `MANUAL_DE_USUARIO.md`. Contrastarlas con el código antes de darlas por vigentes.
